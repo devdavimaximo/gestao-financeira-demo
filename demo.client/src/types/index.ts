@@ -1,113 +1,178 @@
-export type TransactionType = 'Income' | 'Expense' | 'Transfer';
-export type CategoryType = 'Income' | 'Expense' | 'Both';
-export type AccountType = 'Checking' | 'Savings' | 'CreditCard' | 'Investment' | 'Cash';
+// ── Auth ──────────────────────────────────────────────────────────────────────
+export interface AuthUser {
+  token: string;
+  fullName: string;
+  email: string;
+  role: string;
+  unitIds: string[];
+  expiresAt: string;
+}
+
+// ── Units ─────────────────────────────────────────────────────────────────────
+export type UnitStatus = 'Active' | 'Inactive';
+
+export interface Unit {
+  id: string;
+  name: string;
+  identifier: string;
+  status: UnitStatus;
+  createdAt: string;
+}
+
+export interface CreateUnitRequest {
+  name: string;
+  identifier: string;
+}
+
+export interface UpdateUnitRequest {
+  name: string;
+  identifier: string;
+  status: UnitStatus;
+}
+
+// ── Users ─────────────────────────────────────────────────────────────────────
+export interface AppUser {
+  id: string;
+  fullName: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  unitIds: string[];
+  createdAt: string;
+}
+
+export interface CreateUserRequest {
+  fullName: string;
+  email: string;
+  password: string;
+  role: string;
+  unitIds: string[];
+}
+
+export interface UpdateUserRequest {
+  fullName: string;
+  role: string;
+  isActive: boolean;
+  unitIds: string[];
+}
+
+// ── Financial Entries ─────────────────────────────────────────────────────────
+export type FinancialEntryType = 'Revenue' | 'Expense';
+
+export interface FinancialEntry {
+  id: string;
+  description: string;
+  amount: number;
+  type: FinancialEntryType;
+  date: string;
+  notes?: string;
+  unitId: string;
+  unitName: string;
+  categoryId: string;
+  categoryName: string;
+  paymentMethodId: string;
+  paymentMethodName: string;
+  salesChannelId?: string;
+  salesChannelName?: string;
+}
+
+// ── Accounts Payable ──────────────────────────────────────────────────────────
+export type AccountPayableStatus = 'Pending' | 'Paid' | 'Overdue' | 'Cancelled';
+
+export interface AccountPayable {
+  id: string;
+  description: string;
+  amount: number;
+  dueDate: string;
+  paidDate?: string;
+  paidAmount?: number;
+  status: AccountPayableStatus;
+  unitId: string;
+  unitName: string;
+  categoryId: string;
+  categoryName: string;
+}
+
+// ── Accounts Receivable ───────────────────────────────────────────────────────
+export type AccountReceivableStatus = 'Pending' | 'Received' | 'Overdue' | 'Cancelled';
+
+export interface AccountReceivable {
+  id: string;
+  description: string;
+  expectedAmount: number;
+  receivedAmount?: number;
+  expectedDate: string;
+  receivedDate?: string;
+  status: AccountReceivableStatus;
+  unitId: string;
+  unitName: string;
+  categoryId: string;
+  categoryName: string;
+}
+
+// ── Budgets ───────────────────────────────────────────────────────────────────
 export type BudgetStatus = 'Active' | 'Exceeded' | 'Closed';
 
-export interface Transaction {
-  id: number;
-  description: string;
-  amount: number;
-  type: TransactionType;
-  date: string;
-  notes?: string;
-  accountId: number;
-  accountName: string;
-  categoryId: number;
-  categoryName: string;
-  categoryColor: string;
-  createdAt: string;
-}
-
-export interface CreateTransaction {
-  description: string;
-  amount: number;
-  type: TransactionType;
-  date: string;
-  notes?: string;
-  accountId: number;
-  categoryId: number;
-}
-
-export interface Category {
-  id: number;
-  name: string;
-  description?: string;
-  color: string;
-  icon: string;
-  type: CategoryType;
-  createdAt: string;
-}
-
-export interface CreateCategory {
-  name: string;
-  description?: string;
-  color: string;
-  icon: string;
-  type: CategoryType;
-}
-
-export interface Account {
-  id: number;
-  name: string;
-  type: AccountType;
-  balance: number;
-  currency: string;
-  description?: string;
-  isActive: boolean;
-  createdAt: string;
-}
-
-export interface CreateAccount {
-  name: string;
-  type: AccountType;
-  initialBalance: number;
-  currency: string;
-  description?: string;
-}
-
 export interface Budget {
-  id: number;
-  name: string;
-  limitAmount: number;
-  spentAmount: number;
+  id: string;
+  description: string;
+  totalAmount: number;
+  usedAmount: number;
+  availableAmount: number;
   month: number;
   year: number;
   status: BudgetStatus;
-  categoryId: number;
+  unitId: string;
+  unitName: string;
+  categoryId: string;
   categoryName: string;
-  categoryColor: string;
-  createdAt: string;
 }
 
-export interface CreateBudget {
-  name: string;
-  limitAmount: number;
-  month: number;
-  year: number;
-  categoryId: number;
-}
+// ── Purchases ─────────────────────────────────────────────────────────────────
+export type PurchaseStatus = 'Intended' | 'Confirmed' | 'Cancelled';
 
-export interface DashboardSummary {
-  totalIncome: number;
-  totalExpenses: number;
-  netBalance: number;
-  totalAssets: number;
-  monthlyChart: MonthlyChart[];
-  topExpenseCategories: CategoryExpense[];
-  recentTransactions: Transaction[];
-}
-
-export interface MonthlyChart {
-  month: number;
-  year: number;
-  label: string;
-  income: number;
-  expenses: number;
-}
-
-export interface CategoryExpense {
-  categoryName: string;
-  color: string;
+export interface Purchase {
+  id: string;
+  description: string;
   amount: number;
-  percentage: number;
+  dueDate?: string;
+  status: PurchaseStatus;
+  unitId: string;
+  unitName: string;
+  budgetId: string;
+}
+
+// ── Alerts ────────────────────────────────────────────────────────────────────
+export type AlertType =
+  | 'LowBudget'
+  | 'UpcomingDue'
+  | 'NegativeBalance'
+  | 'BudgetExceeded'
+  | 'OverduePayable';
+
+export interface Alert {
+  id: string;
+  type: AlertType;
+  message: string;
+  isRead: boolean;
+  referenceId?: string;
+  createdAt: string;
+  unitId: string;
+  unitName: string;
+}
+
+// ── Lookup tables ─────────────────────────────────────────────────────────────
+export interface FinancialCategory {
+  id: string;
+  name: string;
+}
+
+export interface PaymentMethod {
+  id: string;
+  name: string;
+}
+
+export interface SalesChannel {
+  id: string;
+  name: string;
 }

@@ -1,74 +1,64 @@
 import type {
-  Account, Budget, Category, CreateAccount, CreateBudget,
-  CreateCategory, CreateTransaction, DashboardSummary, Transaction,
-  TransactionType, CategoryType
+  Unit, CreateUnitRequest, UpdateUnitRequest,
+  AppUser, CreateUserRequest, UpdateUserRequest,
 } from '../types';
 
 const BASE_URL = '/api';
+const STORAGE_KEY = 'gestao_financeira_user';
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-  if (res.status === 204) return undefined as T;
-  return res.json();
+function getToken(): string | null {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return null;
+    return (JSON.parse(stored) as { token?: string }).token ?? null;
+  } catch {
+    return null;
+  }
 }
 
-export const dashboardApi = {
-  getSummary: (month?: number, year?: number) => {
-    const params = new URLSearchParams();
-    if (month) params.set('month', String(month));
-    if (year) params.set('year', String(year));
-    return request<DashboardSummary>(`/dashboard?${params}`);
-  },
+async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = getToken();
+  const res = await fetch(`${BASE_URL}${path}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    ...options,
+  });
+
+  if (res.status === 401) {
+    localStorage.removeItem(STORAGE_KEY);
+    window.location.href = '/login';
+    throw new Error('Sessão expirada. Faça login novamente.');
+  }
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as { message?: string };
+    throw new Error(err.message ?? `Erro ${res.status}: ${res.statusText}`);
+  }
+
+  if (res.status === 204) return undefined as T;
+  return res.json() as Promise<T>;
+}
+
+export const unitsApi = {
+  getAll: () => request<Unit[]>('/units'),
+  getById: (id: string) => request<Unit>(`/units/${id}`),
+  create: (dto: CreateUnitRequest) =>
+    request<Unit>('/units', { method: 'POST', body: JSON.stringify(dto) }),
+  update: (id: string, dto: UpdateUnitRequest) =>
+    request<Unit>(`/units/${id}`, { method: 'PUT', body: JSON.stringify(dto) }),
+  delete: (id: string) =>
+    request<void>(`/units/${id}`, { method: 'DELETE' }),
 };
 
-export const transactionsApi = {
-  getAll: (filters?: { accountId?: number; categoryId?: number; type?: TransactionType; from?: string; to?: string }) => {
-    const params = new URLSearchParams();
-    if (filters?.accountId) params.set('accountId', String(filters.accountId));
-    if (filters?.categoryId) params.set('categoryId', String(filters.categoryId));
-    if (filters?.type) params.set('type', filters.type);
-    if (filters?.from) params.set('from', filters.from);
-    if (filters?.to) params.set('to', filters.to);
-    return request<Transaction[]>(`/transactions?${params}`);
-  },
-  getById: (id: number) => request<Transaction>(`/transactions/${id}`),
-  create: (dto: CreateTransaction) => request<Transaction>('/transactions', { method: 'POST', body: JSON.stringify(dto) }),
-  update: (id: number, dto: Partial<CreateTransaction>) => request<Transaction>(`/transactions/${id}`, { method: 'PUT', body: JSON.stringify(dto) }),
-  delete: (id: number) => request<void>(`/transactions/${id}`, { method: 'DELETE' }),
-};
-
-export const categoriesApi = {
-  getAll: (type?: CategoryType) => {
-    const params = type ? `?type=${type}` : '';
-    return request<Category[]>(`/categories${params}`);
-  },
-  getById: (id: number) => request<Category>(`/categories/${id}`),
-  create: (dto: CreateCategory) => request<Category>('/categories', { method: 'POST', body: JSON.stringify(dto) }),
-  update: (id: number, dto: Partial<CreateCategory>) => request<Category>(`/categories/${id}`, { method: 'PUT', body: JSON.stringify(dto) }),
-  delete: (id: number) => request<void>(`/categories/${id}`, { method: 'DELETE' }),
-};
-
-export const accountsApi = {
-  getAll: (activeOnly?: boolean) => request<Account[]>(`/accounts${activeOnly ? '?activeOnly=true' : ''}`),
-  getById: (id: number) => request<Account>(`/accounts/${id}`),
-  create: (dto: CreateAccount) => request<Account>('/accounts', { method: 'POST', body: JSON.stringify(dto) }),
-  update: (id: number, dto: Partial<CreateAccount & { isActive: boolean }>) => request<Account>(`/accounts/${id}`, { method: 'PUT', body: JSON.stringify(dto) }),
-  delete: (id: number) => request<void>(`/accounts/${id}`, { method: 'DELETE' }),
-};
-
-export const budgetsApi = {
-  getAll: (month?: number, year?: number) => {
-    const params = new URLSearchParams();
-    if (month) params.set('month', String(month));
-    if (year) params.set('year', String(year));
-    return request<Budget[]>(`/budgets?${params}`);
-  },
-  getById: (id: number) => request<Budget>(`/budgets/${id}`),
-  create: (dto: CreateBudget) => request<Budget>('/budgets', { method: 'POST', body: JSON.stringify(dto) }),
-  update: (id: number, dto: Partial<CreateBudget>) => request<Budget>(`/budgets/${id}`, { method: 'PUT', body: JSON.stringify(dto) }),
-  delete: (id: number) => request<void>(`/budgets/${id}`, { method: 'DELETE' }),
+export const usersApi = {
+  getAll: () => request<AppUser[]>('/users'),
+  getById: (id: string) => request<AppUser>(`/users/${id}`),
+  create: (dto: CreateUserRequest) =>
+    request<AppUser>('/users', { method: 'POST', body: JSON.stringify(dto) }),
+  update: (id: string, dto: UpdateUserRequest) =>
+    request<AppUser>(`/users/${id}`, { method: 'PUT', body: JSON.stringify(dto) }),
+  deactivate: (id: string) =>
+    request<void>(`/users/${id}`, { method: 'DELETE' }),
 };
