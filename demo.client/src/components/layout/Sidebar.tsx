@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import UnitSelector from './UnitSelector';
 import {
   LayoutDashboard, Receipt, CreditCard, Wallet, PiggyBank,
   ShoppingCart, TrendingUp, Calendar, BarChart3, Bell,
@@ -52,7 +53,7 @@ function NavButton({ item, onClick }: { item: NavItem; onClick: () => void }) {
       {({ isActive }) => (
         <>
           {isActive && (
-            <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r bg-brand-gold" />
+            <span className="absolute left-0 top-1 bottom-1 w-0.75 rounded-r bg-brand-gold" />
           )}
           <item.icon size={16} strokeWidth={1.75} />
           <span>{item.label}</span>
@@ -84,6 +85,9 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
           Financeira
         </div>
       </div>
+
+      {/* Unit selector */}
+      <UnitSelector />
 
       {/* Navigation */}
       <nav className="flex-1 py-3 overflow-y-auto">

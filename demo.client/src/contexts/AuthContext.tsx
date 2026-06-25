@@ -49,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem('gestao_financeira_unit');
     setUser(null);
   }, []);
 
