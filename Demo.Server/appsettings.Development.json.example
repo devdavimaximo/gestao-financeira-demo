@@ -1,0 +1,18 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5432;Database=gestao_financeira_demo;Username=SEU_USUARIO;Password=SUA_SENHA"
+  },
+  "JwtSettings": {
+    "SecretKey": "CHAVE_SECRETA_MINIMO_32_CARACTERES_AQUI",
+    "Issuer": "GestaoFinanceira.Demo",
+    "Audience": "GestaoFinanceira.Demo.Client",
+    "ExpirationInHours": 8
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning",
+      "Microsoft.EntityFrameworkCore.Database.Command": "Information"
+    }
+  }
+}
