@@ -1,21 +1,24 @@
-using Demo.Server.Services;
+using Demo.Server.Application.Interfaces;
+using Demo.Server.Infrastructure.Identity;
+using Demo.Server.Infrastructure.Seed;
+using Demo.Server.Presentation.Extensions;
 
 namespace Demo.Server;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        builder.Services.AddControllers();
+        builder.Services.AddControllers()
+            .AddJsonOptions(o =>
+                o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
         builder.Services.AddOpenApi();
 
-        builder.Services.AddSingleton<ICategoryService, CategoryService>();
-        builder.Services.AddSingleton<IAccountService, AccountService>();
-        builder.Services.AddSingleton<ITransactionService, TransactionService>();
-        builder.Services.AddSingleton<IBudgetService, BudgetService>();
-        builder.Services.AddSingleton<IDashboardService, DashboardService>();
+        builder.Services.AddDatabase(builder.Configuration);
+        builder.Services.AddIdentityWithJwt(builder.Configuration);
+        builder.Services.AddScoped<IJwtService, JwtService>();
 
         var app = builder.Build();
 
@@ -25,13 +28,16 @@ public class Program
         if (app.Environment.IsDevelopment())
         {
             app.MapOpenApi();
+            await app.ApplyMigrationsAsync();
+            await DataSeeder.SeedAsync(app.Services);
         }
 
         app.UseHttpsRedirection();
+        app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
         app.MapFallbackToFile("/index.html");
 
-        app.Run();
+        await app.RunAsync();
     }
 }
