@@ -56,6 +56,22 @@ export interface UpdateUserRequest {
   unitIds: string[];
 }
 
+// ── Lookup tables ─────────────────────────────────────────────────────────────
+export interface FinancialCategory {
+  id: string;
+  name: string;
+}
+
+export interface PaymentMethod {
+  id: string;
+  name: string;
+}
+
+export interface SalesChannel {
+  id: string;
+  name: string;
+}
+
 // ── Financial Entries ─────────────────────────────────────────────────────────
 export type FinancialEntryType = 'Revenue' | 'Expense';
 
@@ -76,6 +92,29 @@ export interface FinancialEntry {
   salesChannelName?: string;
 }
 
+export interface CreateEntryRequest {
+  description: string;
+  amount: number;
+  type: FinancialEntryType;
+  date: string;
+  notes?: string;
+  unitId: string;
+  categoryId: string;
+  paymentMethodId: string;
+  salesChannelId?: string;
+}
+
+export interface UpdateEntryRequest {
+  description: string;
+  amount: number;
+  type: FinancialEntryType;
+  date: string;
+  notes?: string;
+  categoryId: string;
+  paymentMethodId: string;
+  salesChannelId?: string;
+}
+
 // ── Accounts Payable ──────────────────────────────────────────────────────────
 export type AccountPayableStatus = 'Pending' | 'Paid' | 'Overdue' | 'Cancelled';
 
@@ -87,10 +126,38 @@ export interface AccountPayable {
   paidDate?: string;
   paidAmount?: number;
   status: AccountPayableStatus;
+  notes?: string;
   unitId: string;
   unitName: string;
   categoryId: string;
   categoryName: string;
+  paymentMethodId?: string;
+  paymentMethodName?: string;
+}
+
+export interface CreatePayableRequest {
+  description: string;
+  amount: number;
+  dueDate: string;
+  notes?: string;
+  unitId: string;
+  categoryId: string;
+  paymentMethodId?: string;
+}
+
+export interface UpdatePayableRequest {
+  description: string;
+  amount: number;
+  dueDate: string;
+  notes?: string;
+  categoryId: string;
+  paymentMethodId?: string;
+}
+
+export interface PayPayableRequest {
+  paidAmount: number;
+  paidDate: string;
+  paymentMethodId: string;
 }
 
 // ── Accounts Receivable ───────────────────────────────────────────────────────
@@ -104,10 +171,28 @@ export interface AccountReceivable {
   expectedDate: string;
   receivedDate?: string;
   status: AccountReceivableStatus;
+  notes?: string;
   unitId: string;
   unitName: string;
   categoryId: string;
   categoryName: string;
+  paymentMethodId?: string;
+  paymentMethodName?: string;
+}
+
+export interface CreateReceivableRequest {
+  description: string;
+  expectedAmount: number;
+  expectedDate: string;
+  notes?: string;
+  unitId: string;
+  categoryId: string;
+  paymentMethodId?: string;
+}
+
+export interface ReceiveRequest {
+  receivedAmount: number;
+  receivedDate: string;
 }
 
 // ── Budgets ───────────────────────────────────────────────────────────────────
@@ -124,8 +209,19 @@ export interface Budget {
   status: BudgetStatus;
   unitId: string;
   unitName: string;
-  categoryId: string;
-  categoryName: string;
+}
+
+export interface CreateBudgetRequest {
+  description: string;
+  totalAmount: number;
+  month: number;
+  year: number;
+  unitId: string;
+}
+
+export interface UpdateBudgetRequest {
+  description: string;
+  totalAmount: number;
 }
 
 // ── Purchases ─────────────────────────────────────────────────────────────────
@@ -137,9 +233,32 @@ export interface Purchase {
   amount: number;
   dueDate?: string;
   status: PurchaseStatus;
+  notes?: string;
   unitId: string;
   unitName: string;
   budgetId: string;
+  budgetDescription: string;
+  categoryId: string;
+  categoryName: string;
+}
+
+export interface CreatePurchaseRequest {
+  description: string;
+  amount: number;
+  dueDate?: string;
+  notes?: string;
+  unitId: string;
+  categoryId: string;
+  budgetId: string;
+}
+
+export interface UpdatePurchaseRequest {
+  description: string;
+  amount: number;
+  dueDate?: string;
+  notes?: string;
+  categoryId: string;
+  status: PurchaseStatus;
 }
 
 // ── Alerts ────────────────────────────────────────────────────────────────────
@@ -161,18 +280,69 @@ export interface Alert {
   unitName: string;
 }
 
-// ── Lookup tables ─────────────────────────────────────────────────────────────
-export interface FinancialCategory {
-  id: string;
-  name: string;
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+export interface DashboardKpi {
+  totalRevenue: number;
+  totalExpenses: number;
+  balance: number;
+  pendingPayables: number;
+  pendingReceivables: number;
+  unreadAlerts: number;
 }
 
-export interface PaymentMethod {
-  id: string;
-  name: string;
+export interface ChartPoint {
+  label: string;
+  revenue: number;
+  expenses: number;
 }
 
-export interface SalesChannel {
-  id: string;
+export interface CategorySummary {
   name: string;
+  amount: number;
+  count: number;
+}
+
+export interface DashboardData {
+  kpis: DashboardKpi;
+  monthlyChart: ChartPoint[];
+  topExpenses: CategorySummary[];
+  topRevenues: CategorySummary[];
+}
+
+// ── Cash Flow ─────────────────────────────────────────────────────────────────
+export interface CashFlowPoint {
+  label: string;
+  date: string;
+  revenue: number;
+  expenses: number;
+  balance: number;
+  runningBalance: number;
+}
+
+export interface CashFlowData {
+  points: CashFlowPoint[];
+  totalRevenue: number;
+  totalExpenses: number;
+  netBalance: number;
+}
+
+// ── Calendar ──────────────────────────────────────────────────────────────────
+export type CalendarEventType = 'Payable' | 'Receivable' | 'Revenue' | 'Expense';
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  amount: number;
+  date: string;
+  eventType: CalendarEventType;
+  status: string;
+  unitName: string;
+}
+
+// ── Channels ──────────────────────────────────────────────────────────────────
+export interface ChannelSummary {
+  channelName: string;
+  amount: number;
+  count: number;
+  percentage: number;
 }

@@ -1,70 +1,71 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Construction } from 'lucide-react';
+import { ToastProvider } from './components/shared/toast';
+import { ThemeProvider } from './contexts/ThemeContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/layout/Layout';
 import Login from './pages/auth/Login';
 import Units from './pages/units/Units';
 import Users from './pages/users/Users';
-
-function ComingSoon({ title }: { title: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-64 py-16 text-center">
-      <Construction size={40} className="text-gray-200 mb-4" strokeWidth={1.25} />
-      <h2 className="text-lg font-semibold text-gray-400">{title}</h2>
-      <p className="text-sm text-gray-300 mt-1">Módulo em desenvolvimento — Fase 3 / 4</p>
-    </div>
-  );
-}
+import Lancamentos from './pages/entries/Lancamentos';
+import ContasPagar from './pages/payables/ContasPagar';
+import ContasReceber from './pages/receivables/ContasReceber';
+import Verbas from './pages/budgets/Verbas';
+import Compras from './pages/purchases/Compras';
+import Dashboard from './pages/dashboard/Dashboard';
+import FluxoCaixa from './pages/cashflow/FluxoCaixa';
+import CalendarioFinanceiro from './pages/calendar/CalendarioFinanceiro';
+import CanaisVenda from './pages/channels/CanaisVenda';
+import Alertas from './pages/alerts/Alertas';
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Public */}
-        <Route path="/login" element={<Login />} />
+    <ThemeProvider>
+      <ToastProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Login />} />
 
-        {/* Protected — all inside Layout */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Layout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<ComingSoon title="Dashboard Gerencial" />} />
-          <Route path="lancamentos"    element={<ComingSoon title="Lançamentos Financeiros" />} />
-          <Route path="contas-pagar"   element={<ComingSoon title="Contas a Pagar" />} />
-          <Route path="contas-receber" element={<ComingSoon title="Contas a Receber" />} />
-          <Route path="verbas"         element={<ComingSoon title="Controle de Verbas" />} />
-          <Route path="compras"        element={<ComingSoon title="Controle de Compras" />} />
-          <Route path="fluxo-caixa"    element={<ComingSoon title="Fluxo de Caixa" />} />
-          <Route path="calendario"     element={<ComingSoon title="Calendário Financeiro" />} />
-          <Route path="canais"         element={<ComingSoon title="Canais de Venda" />} />
-          <Route path="alertas"        element={<ComingSoon title="Alertas Financeiros" />} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Dashboard />} />
+              <Route path="lancamentos"    element={<Lancamentos />} />
+              <Route path="contas-pagar"   element={<ContasPagar />} />
+              <Route path="contas-receber" element={<ContasReceber />} />
+              <Route path="verbas"         element={<Verbas />} />
+              <Route path="compras"        element={<Compras />} />
+              <Route path="fluxo-caixa"    element={<FluxoCaixa />} />
+              <Route path="calendario"     element={<CalendarioFinanceiro />} />
+              <Route path="canais"         element={<CanaisVenda />} />
+              <Route path="alertas"        element={<Alertas />} />
 
-          {/* Admin only */}
-          <Route
-            path="unidades"
-            element={
-              <ProtectedRoute adminOnly>
-                <Units />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="usuarios"
-            element={
-              <ProtectedRoute adminOnly>
-                <Users />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
+              <Route
+                path="unidades"
+                element={
+                  <ProtectedRoute adminOnly>
+                    <Units />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="usuarios"
+                element={
+                  <ProtectedRoute adminOnly>
+                    <Users />
+                  </ProtectedRoute>
+                }
+              />
+            </Route>
 
-        {/* Catch-all */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </ToastProvider>
+    </ThemeProvider>
   );
 }
