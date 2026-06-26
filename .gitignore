@@ -91,6 +91,7 @@ $RECYCLE.BIN/
 # ============================================================
 .superpowers/
 .claude/skills/
+docs/superpowers/
 
 # ============================================================
 # Cobertura de testes e relatórios
