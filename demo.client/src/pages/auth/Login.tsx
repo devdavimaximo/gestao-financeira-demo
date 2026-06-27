@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
 import {
-  TrendingUp, Mail, Lock, Eye, EyeOff,
+  Mail, Lock, Eye, EyeOff,
   AlertCircle, BarChart3, Shield, Activity, ArrowRight,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -125,15 +125,7 @@ export default function Login() {
           transition={{ duration: 0.48, ease: 'easeOut' }}
           className="flex items-center gap-3 shrink-0"
         >
-          <div
-            className="size-11 rounded-xl flex items-center justify-center shrink-0"
-            style={{
-              background: '#fbc654',
-              boxShadow: '0 4px 18px rgba(251,198,84,0.30)',
-            }}
-          >
-            <TrendingUp size={21} className="text-[#0f2860]" strokeWidth={2.5} />
-          </div>
+          <img src="/logo.png" alt="Gestão Financeira" className="size-11 rounded-xl object-contain shrink-0" />
           <div>
             <div
               className="text-white font-black leading-tight"
@@ -280,12 +272,7 @@ export default function Login() {
         >
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-3 mb-8">
-            <div
-              className="size-10 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: '#fbc654', boxShadow: '0 4px 16px rgba(251,198,84,0.35)' }}
-            >
-              <TrendingUp size={18} className="text-[#0f2860]" strokeWidth={2.5} />
-            </div>
+            <img src="/logo.png" alt="Gestão Financeira" className="size-10 rounded-xl object-contain shrink-0" />
             <div>
               <div
                 className="text-white font-black"
