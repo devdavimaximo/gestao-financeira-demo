@@ -4,6 +4,7 @@ namespace Demo.Server.Application.Interfaces;
 
 public interface IJwtService
 {
-    string GenerateToken(AppUser user, IList<string> roles, IList<Guid> unitIds);
-    DateTime GetExpiration();
+    (string Token, string JwtId, DateTime ExpiresAt) GenerateToken(AppUser user, IList<UnitPermissionSet> unitPermissions);
 }
+
+public record UnitPermissionSet(Guid UnitId, string UnitName, string RoleName, IList<string> Permissions);

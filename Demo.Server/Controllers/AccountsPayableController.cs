@@ -1,6 +1,8 @@
 using Demo.Server.Application.DTOs.Payables;
+using Demo.Server.Domain.Constants;
 using Demo.Server.Domain.Entities;
 using Demo.Server.Domain.Enums;
+using Demo.Server.Infrastructure.Authorization;
 using Demo.Server.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,9 +13,11 @@ namespace Demo.Server.Controllers;
 [ApiController]
 [Route("api/payables")]
 [Authorize]
+[ValidateUnitAccess]
 public class AccountsPayableController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
+    [RequirePermission(PermissionCodes.Payables.View)]
     public async Task<IActionResult> GetAll(
         [FromQuery] Guid? unitId,
         [FromQuery] AccountPayableStatus? status,
@@ -41,7 +45,7 @@ public class AccountsPayableController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin,Financial")]
+    [RequirePermission(PermissionCodes.Payables.Create)]
     public async Task<IActionResult> Create([FromBody] CreatePayableRequest req)
     {
         var payable = new AccountPayable
@@ -63,7 +67,7 @@ public class AccountsPayableController(AppDbContext db) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Admin,Financial")]
+    [RequirePermission(PermissionCodes.Payables.Edit)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdatePayableRequest req)
     {
         var payable = await db.AccountsPayable.FindAsync(id);
@@ -83,7 +87,7 @@ public class AccountsPayableController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost("{id:guid}/pay")]
-    [Authorize(Roles = "Admin,Financial")]
+    [RequirePermission(PermissionCodes.Payables.Pay)]
     public async Task<IActionResult> Pay(Guid id, [FromBody] PayPayableRequest req)
     {
         var payable = await db.AccountsPayable.FindAsync(id);
@@ -101,7 +105,7 @@ public class AccountsPayableController(AppDbContext db) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Admin,Financial")]
+    [RequirePermission(PermissionCodes.Payables.Cancel)]
     public async Task<IActionResult> Cancel(Guid id)
     {
         var payable = await db.AccountsPayable.FindAsync(id);

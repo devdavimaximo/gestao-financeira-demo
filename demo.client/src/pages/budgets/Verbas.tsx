@@ -74,7 +74,7 @@ function ProgressBar({ used, total }: { used: number; total: number }) {
 export default function Verbas() {
   const { user, isAdmin } = useAuth();
   const { selectedUnitId } = useUnit();
-  const toast = useToast();
+  const { toast } = useToast();
   const qc = useQueryClient();
   const canEdit = isAdmin || user?.role === 'Financial';
 

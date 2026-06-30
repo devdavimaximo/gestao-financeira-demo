@@ -1,6 +1,8 @@
 using Demo.Server.Application.DTOs.Budgets;
+using Demo.Server.Domain.Constants;
 using Demo.Server.Domain.Entities;
 using Demo.Server.Domain.Enums;
+using Demo.Server.Infrastructure.Authorization;
 using Demo.Server.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,9 +13,11 @@ namespace Demo.Server.Controllers;
 [ApiController]
 [Route("api/budgets")]
 [Authorize]
+[ValidateUnitAccess]
 public class BudgetsController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
+    [RequirePermission(PermissionCodes.Budgets.View)]
     public async Task<IActionResult> GetAll(
         [FromQuery] Guid? unitId,
         [FromQuery] int? month,
@@ -41,7 +45,7 @@ public class BudgetsController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin,Financial")]
+    [RequirePermission(PermissionCodes.Budgets.Create)]
     public async Task<IActionResult> Create([FromBody] CreateBudgetRequest req)
     {
         var budget = new Budget
@@ -62,7 +66,7 @@ public class BudgetsController(AppDbContext db) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Admin,Financial")]
+    [RequirePermission(PermissionCodes.Budgets.Edit)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateBudgetRequest req)
     {
         var budget = await db.Budgets.FindAsync(id);

@@ -6,8 +6,9 @@ interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  hasPermission: (code: string, unitId?: string) => boolean;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -30,6 +31,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   });
 
+  const hasPermission = useCallback((code: string, unitId?: string): boolean => {
+    if (!user) return false;
+    if (unitId) {
+      return user.units.some(u => u.unitId === unitId && u.permissions.includes(code));
+    }
+    return user.units.some(u => u.permissions.includes(code));
+  }, [user]);
+
   const login = useCallback(async (email: string, password: string) => {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
@@ -47,22 +56,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data);
   }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem('gestao_financeira_unit');
-    setUser(null);
+  const logout = useCallback(async () => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      const token = stored ? (JSON.parse(stored) as AuthUser).token : null;
+      if (token) {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => {});
+      }
+    } finally {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem('gestao_financeira_unit');
+      setUser(null);
+    }
   }, []);
 
+  // isAdmin: has users:view permission in any unit
+  const isAdmin = !!user?.units.some(u => u.permissions.includes('users:view'));
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated: !!user,
-        isAdmin: user?.role === 'Admin',
-        login,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isAdmin, hasPermission, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

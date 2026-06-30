@@ -1,10 +1,22 @@
 // ── Auth ──────────────────────────────────────────────────────────────────────
+export type UserStatus = 'Active' | 'Blocked' | 'Suspended' | 'AwaitingActivation' | 'Deactivated';
+
+export interface UnitAccess {
+  unitId: string;
+  unitName: string;
+  roleName: string;
+  permissions: string[];
+}
+
 export interface AuthUser {
   token: string;
+  firstName: string;
+  lastName: string;
   fullName: string;
   email: string;
-  role: string;
-  unitIds: string[];
+  status: UserStatus;
+  forcePasswordChange: boolean;
+  units: UnitAccess[];
   expiresAt: string;
 }
 
@@ -28,32 +40,6 @@ export interface UpdateUnitRequest {
   name: string;
   identifier: string;
   status: UnitStatus;
-}
-
-// ── Users ─────────────────────────────────────────────────────────────────────
-export interface AppUser {
-  id: string;
-  fullName: string;
-  email: string;
-  role: string;
-  isActive: boolean;
-  unitIds: string[];
-  createdAt: string;
-}
-
-export interface CreateUserRequest {
-  fullName: string;
-  email: string;
-  password: string;
-  role: string;
-  unitIds: string[];
-}
-
-export interface UpdateUserRequest {
-  fullName: string;
-  role: string;
-  isActive: boolean;
-  unitIds: string[];
 }
 
 // ── Lookup tables ─────────────────────────────────────────────────────────────
@@ -345,4 +331,179 @@ export interface ChannelSummary {
   amount: number;
   count: number;
   percentage: number;
+}
+
+// ── Admin — Users ─────────────────────────────────────────────────────────────
+export interface AdminUserUnitRole {
+  unitId: string;
+  unitName: string;
+  roleId: string;
+  roleName: string;
+}
+
+export interface AdminUserListItem {
+  id: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  position?: string;
+  avatarUrl?: string;
+  status: UserStatus;
+  forcePasswordChange: boolean;
+  createdAt: string;
+  lastSeenAt?: string;
+  units: AdminUserUnitRole[];
+}
+
+export interface AdminUserDetail {
+  id: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  position?: string;
+  avatarUrl?: string;
+  notes?: string;
+  status: UserStatus;
+  forcePasswordChange: boolean;
+  isSystemUser: boolean;
+  createdAt: string;
+  createdByUserId?: string;
+  units: AdminUserUnitRole[];
+}
+
+export interface AdminCreateUserRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  phone?: string;
+  position?: string;
+  avatarUrl?: string;
+  notes?: string;
+  status: UserStatus;
+  forcePasswordChange: boolean;
+  units: { unitId: string; roleId: string }[];
+}
+
+export interface AdminUpdateUserRequest {
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  position?: string;
+  avatarUrl?: string;
+  notes?: string;
+}
+
+export interface UserTimelineEvent {
+  id: string;
+  action: string;
+  actorFullName?: string;
+  entityId?: string;
+  detail?: string;
+  ipAddress?: string;
+  createdAt: string;
+}
+
+export interface AdminUserPermissions {
+  unitId: string;
+  unitName: string;
+  roleName: string;
+  rolePermissions: string[];
+  overrides: {
+    permissionId: string;
+    code: string;
+    name: string;
+    isGranted: boolean;
+  }[];
+}
+
+// ── Admin — Roles ─────────────────────────────────────────────────────────────
+export interface AdminRoleListItem {
+  id: string;
+  name: string;
+  description?: string;
+  isSystem: boolean;
+  isActive: boolean;
+  userCount: number;
+  createdAt: string;
+}
+
+export interface AdminRoleDetail {
+  id: string;
+  name: string;
+  description?: string;
+  isSystem: boolean;
+  isActive: boolean;
+  permissionCodes: string[];
+}
+
+export interface AdminCreateRoleRequest {
+  name: string;
+  description?: string;
+  permissionCodes: string[];
+}
+
+export interface AdminUpdateRoleRequest {
+  name: string;
+  description?: string;
+  isActive: boolean;
+  permissionCodes: string[];
+}
+
+// ── Admin — Modules / Permissions ─────────────────────────────────────────────
+export interface AdminPermissionItem {
+  id: string;
+  code: string;
+  name: string;
+  displayOrder: number;
+}
+
+export interface AdminModule {
+  id: string;
+  code: string;
+  name: string;
+  icon?: string;
+  displayOrder: number;
+  permissions: AdminPermissionItem[];
+}
+
+// ── Admin — Audit ─────────────────────────────────────────────────────────────
+export interface AdminAuditLog {
+  id: string;
+  actorUserId?: string;
+  actorFullName?: string;
+  action: string;
+  entityType: string;
+  entityId?: string;
+  before?: string;
+  after?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  createdAt: string;
+}
+
+// ── Admin — Sessions ──────────────────────────────────────────────────────────
+export interface AdminSession {
+  id: string;
+  userId: string;
+  userFullName: string;
+  ipAddress?: string;
+  userAgent?: string;
+  isRevoked: boolean;
+  lastSeenAt: string;
+  expiresAt: string;
+  createdAt: string;
+}
+
+// ── Pagination ────────────────────────────────────────────────────────────────
+export interface PagedResult<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }

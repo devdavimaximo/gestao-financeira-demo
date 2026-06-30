@@ -1,6 +1,8 @@
 using Demo.Server.Application.DTOs.Receivables;
+using Demo.Server.Domain.Constants;
 using Demo.Server.Domain.Entities;
 using Demo.Server.Domain.Enums;
+using Demo.Server.Infrastructure.Authorization;
 using Demo.Server.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,9 +13,11 @@ namespace Demo.Server.Controllers;
 [ApiController]
 [Route("api/receivables")]
 [Authorize]
+[ValidateUnitAccess]
 public class AccountsReceivableController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
+    [RequirePermission(PermissionCodes.Receivables.View)]
     public async Task<IActionResult> GetAll(
         [FromQuery] Guid? unitId,
         [FromQuery] AccountReceivableStatus? status,
@@ -41,7 +45,7 @@ public class AccountsReceivableController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin,Financial")]
+    [RequirePermission(PermissionCodes.Receivables.Create)]
     public async Task<IActionResult> Create([FromBody] CreateReceivableRequest req)
     {
         var receivable = new AccountReceivable
@@ -63,7 +67,7 @@ public class AccountsReceivableController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost("{id:guid}/receive")]
-    [Authorize(Roles = "Admin,Financial")]
+    [RequirePermission(PermissionCodes.Receivables.Receive)]
     public async Task<IActionResult> Receive(Guid id, [FromBody] ReceiveRequest req)
     {
         var receivable = await db.AccountsReceivable.FindAsync(id);
@@ -80,7 +84,7 @@ public class AccountsReceivableController(AppDbContext db) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Admin,Financial")]
+    [RequirePermission(PermissionCodes.Receivables.Cancel)]
     public async Task<IActionResult> Cancel(Guid id)
     {
         var receivable = await db.AccountsReceivable.FindAsync(id);

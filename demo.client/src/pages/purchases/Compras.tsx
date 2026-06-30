@@ -265,7 +265,7 @@ function EditDialog({
 export default function Compras() {
   const { isAdmin, user } = useAuth();
   const { selectedUnitId } = useUnit();
-  const toast = useToast();
+  const { toast } = useToast();
   const qc = useQueryClient();
 
   const { data: units } = useQuery({ queryKey: ['units'], queryFn: unitsApi.getAll });

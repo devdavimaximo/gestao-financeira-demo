@@ -5,7 +5,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/layout/Layout';
 import Login from './pages/auth/Login';
 import Units from './pages/units/Units';
-import Users from './pages/users/Users';
 import Lancamentos from './pages/entries/Lancamentos';
 import ContasPagar from './pages/payables/ContasPagar';
 import ContasReceber from './pages/receivables/ContasReceber';
@@ -16,6 +15,10 @@ import FluxoCaixa from './pages/cashflow/FluxoCaixa';
 import CalendarioFinanceiro from './pages/calendar/CalendarioFinanceiro';
 import CanaisVenda from './pages/channels/CanaisVenda';
 import Alertas from './pages/alerts/Alertas';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminUsuarios from './pages/admin/usuarios/AdminUsuarios';
+import AdminRoles from './pages/admin/roles/AdminRoles';
+import AdminSeguranca from './pages/admin/seguranca/AdminSeguranca';
 
 export default function App() {
   return (
@@ -52,11 +55,37 @@ export default function App() {
                   </ProtectedRoute>
                 }
               />
+
+              {/* Admin routes */}
               <Route
-                path="usuarios"
+                path="admin"
                 element={
                   <ProtectedRoute adminOnly>
-                    <Users />
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="admin/usuarios"
+                element={
+                  <ProtectedRoute adminOnly>
+                    <AdminUsuarios />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="admin/roles"
+                element={
+                  <ProtectedRoute adminOnly>
+                    <AdminRoles />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="admin/seguranca"
+                element={
+                  <ProtectedRoute adminOnly>
+                    <AdminSeguranca />
                   </ProtectedRoute>
                 }
               />

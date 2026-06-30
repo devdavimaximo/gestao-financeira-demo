@@ -6,7 +6,7 @@ import UnitSelector from './UnitSelector';
 import {
   LayoutDashboard, Receipt, CreditCard, Wallet, PiggyBank,
   ShoppingCart, TrendingUp, Calendar, BarChart3, Bell,
-  Store, Users2, LogOut, Menu, X, Moon, Sun, ChevronDown,
+  Store, Users2, ShieldCheck, Shield, Settings2, LogOut, Menu, X, Moon, Sun, ChevronDown,
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -56,8 +56,11 @@ const NAV_GROUPS: NavGroup[] = [
 ];
 
 const ADMIN_ITEMS: NavItem[] = [
-  { label: 'Unidades', icon: Store,  path: '/unidades' },
-  { label: 'Usuários', icon: Users2, path: '/usuarios' },
+  { label: 'Painel Admin', icon: Settings2,  path: '/admin',           end: true },
+  { label: 'Usuários',     icon: Users2,     path: '/admin/usuarios' },
+  { label: 'Cargos',       icon: ShieldCheck,path: '/admin/roles' },
+  // { label: 'Segurança', icon: Shield,     path: '/admin/seguranca' }, // hidden — feature disabled for now
+  { label: 'Unidades',     icon: Store,      path: '/unidades' },
 ];
 
 function NavButton({ item, onClick, badge }: {
@@ -168,7 +171,8 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
       <div className="mx-4 h-px shrink-0" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08) 25%, rgba(255,255,255,0.08) 75%, transparent)' }} />
 
       {/* Unit selector */}
-      <div className="px-3 py-2.5">
+      <div className="px-4 py-3">
+        <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-white/22 mb-1.5">Unidade</p>
         <UnitSelector />
       </div>
 
@@ -232,7 +236,7 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
               {user?.fullName}
             </div>
             <div className="text-white/35 text-[10px] truncate leading-tight mt-0.5">
-              {user?.email ?? user?.role}
+              {user?.email}
             </div>
           </div>
           <ChevronDown size={12} className="text-white/25 shrink-0" />

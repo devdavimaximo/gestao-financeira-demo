@@ -1,6 +1,8 @@
 using Demo.Server.Application.DTOs.Purchases;
+using Demo.Server.Domain.Constants;
 using Demo.Server.Domain.Entities;
 using Demo.Server.Domain.Enums;
+using Demo.Server.Infrastructure.Authorization;
 using Demo.Server.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,9 +13,11 @@ namespace Demo.Server.Controllers;
 [ApiController]
 [Route("api/purchases")]
 [Authorize]
+[ValidateUnitAccess]
 public class PurchasesController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
+    [RequirePermission(PermissionCodes.Purchases.View)]
     public async Task<IActionResult> GetAll(
         [FromQuery] Guid? unitId,
         [FromQuery] Guid? budgetId,
@@ -38,7 +42,7 @@ public class PurchasesController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin,Financial,Purchases")]
+    [RequirePermission(PermissionCodes.Purchases.Create)]
     public async Task<IActionResult> Create([FromBody] CreatePurchaseRequest req)
     {
         var budget = await db.Budgets.FindAsync(req.BudgetId);
@@ -63,14 +67,13 @@ public class PurchasesController(AppDbContext db) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Admin,Financial,Purchases")]
+    [RequirePermission(PermissionCodes.Purchases.Edit)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdatePurchaseRequest req)
     {
         var purchase = await db.Purchases.FindAsync(id);
         if (purchase is null) return NotFound();
 
-        var oldStatus = purchase.Status;
-
+        var oldStatus    = purchase.Status;
         purchase.Description = req.Description;
         purchase.Amount      = req.Amount;
         purchase.DueDate     = req.DueDate;
@@ -80,14 +83,14 @@ public class PurchasesController(AppDbContext db) : ControllerBase
 
         await db.SaveChangesAsync();
 
-        if (oldStatus != req.Status || (req.Status == PurchaseStatus.Confirmed && oldStatus == PurchaseStatus.Confirmed))
+        if (oldStatus != req.Status || req.Status == PurchaseStatus.Confirmed)
             await RecalculateBudget(purchase.BudgetId);
 
         return Ok(await ProjectDto(id));
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Admin,Financial,Purchases")]
+    [RequirePermission(PermissionCodes.Purchases.Cancel)]
     public async Task<IActionResult> Cancel(Guid id)
     {
         var purchase = await db.Purchases.FindAsync(id);
@@ -110,8 +113,7 @@ public class PurchasesController(AppDbContext db) : ControllerBase
 
         if (budget.Status != BudgetStatus.Closed)
             budget.Status = budget.UsedAmount > budget.TotalAmount
-                ? BudgetStatus.Exceeded
-                : BudgetStatus.Active;
+                ? BudgetStatus.Exceeded : BudgetStatus.Active;
 
         await db.SaveChangesAsync();
     }

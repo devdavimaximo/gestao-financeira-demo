@@ -4,7 +4,11 @@ import { cn } from '../../lib/utils';
 
 type ToastType = 'success' | 'error' | 'info';
 
-interface Toast {
+type ToastInput =
+  | { title: string; description?: string; variant?: ToastType }
+  | string;
+
+interface ToastItem {
   id: string;
   type: ToastType;
   message: string;
@@ -12,7 +16,7 @@ interface Toast {
 }
 
 interface ToastCtx {
-  toast: (message: string, type?: ToastType) => void;
+  toast: (input: ToastInput, type?: ToastType) => void;
 }
 
 const Ctx = createContext<ToastCtx>({ toast: () => {} });
@@ -35,7 +39,7 @@ const STYLES: Record<ToastType, { container: string; icon: string }> = {
 };
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
   const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   const dismiss = useCallback((id: string) => {
@@ -47,9 +51,20 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     }, 180);
   }, []);
 
-  const toast = useCallback((message: string, type: ToastType = 'success') => {
+  const toast = useCallback((input: ToastInput, type: ToastType = 'success') => {
     const id = Math.random().toString(36).slice(2);
-    setToasts(ts => [...ts, { id, type, message }]);
+    let message: string;
+    let resolvedType: ToastType;
+
+    if (typeof input === 'string') {
+      message = input;
+      resolvedType = type;
+    } else {
+      message = input.description ? `${input.title} — ${input.description}` : input.title;
+      resolvedType = input.variant ?? 'success';
+    }
+
+    setToasts(ts => [...ts, { id, type: resolvedType, message }]);
     timers.current[id] = setTimeout(() => dismiss(id), 4000);
   }, [dismiss]);
 
@@ -93,5 +108,5 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useToast() {
-  return useContext(Ctx).toast;
+  return { toast: useContext(Ctx).toast };
 }

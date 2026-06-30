@@ -1,6 +1,8 @@
 using Demo.Server.Application.DTOs.Entries;
+using Demo.Server.Domain.Constants;
 using Demo.Server.Domain.Entities;
 using Demo.Server.Domain.Enums;
+using Demo.Server.Infrastructure.Authorization;
 using Demo.Server.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,6 +13,7 @@ namespace Demo.Server.Controllers;
 [ApiController]
 [Route("api/entries")]
 [Authorize]
+[ValidateUnitAccess]
 public class FinancialEntriesController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
@@ -44,7 +47,7 @@ public class FinancialEntriesController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin,Financial")]
+    [RequirePermission(PermissionCodes.Financial.Create)]
     public async Task<IActionResult> Create([FromBody] CreateEntryRequest req)
     {
         var entry = new FinancialEntry
@@ -67,7 +70,7 @@ public class FinancialEntriesController(AppDbContext db) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Admin,Financial")]
+    [RequirePermission(PermissionCodes.Financial.Edit)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateEntryRequest req)
     {
         var entry = await db.FinancialEntries.FindAsync(id);
@@ -87,7 +90,7 @@ public class FinancialEntriesController(AppDbContext db) : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Admin,Financial")]
+    [RequirePermission(PermissionCodes.Financial.Delete)]
     public async Task<IActionResult> Delete(Guid id)
     {
         var entry = await db.FinancialEntries.FindAsync(id);

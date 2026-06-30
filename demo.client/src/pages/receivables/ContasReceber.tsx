@@ -61,7 +61,7 @@ function StatusBadge({ status }: { status: AccountReceivableStatus }) {
 export default function ContasReceber() {
   const { user, isAdmin } = useAuth();
   const { selectedUnitId } = useUnit();
-  const toast = useToast();
+  const { toast } = useToast();
   const qc = useQueryClient();
   const canEdit = isAdmin || user?.role === 'Financial';
 

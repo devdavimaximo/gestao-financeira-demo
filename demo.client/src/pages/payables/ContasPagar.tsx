@@ -62,7 +62,7 @@ function StatusBadge({ status }: { status: AccountPayableStatus }) {
 export default function ContasPagar() {
   const { user, isAdmin } = useAuth();
   const { selectedUnitId } = useUnit();
-  const toast = useToast();
+  const { toast } = useToast();
   const qc = useQueryClient();
   const canEdit = isAdmin || user?.role === 'Financial';
 

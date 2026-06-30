@@ -58,7 +58,7 @@ function TypeBadge({ type }: { type: 'Revenue' | 'Expense' }) {
 export default function Lancamentos() {
   const { user, isAdmin } = useAuth();
   const { selectedUnitId } = useUnit();
-  const toast = useToast();
+  const { toast } = useToast();
   const qc = useQueryClient();
 
   const [filterMonth, setFilterMonth] = useState(now.getMonth() + 1);

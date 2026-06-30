@@ -68,6 +68,8 @@ export const unitsApi = {
     request<Unit>(`/units/${id}`, { method: 'PUT', body: JSON.stringify(dto) }),
   delete: (id: string) =>
     request<void>(`/units/${id}`, { method: 'DELETE' }),
+  permanentDelete: (id: string) =>
+    request<void>(`/units/${id}/permanent`, { method: 'DELETE' }),
 };
 
 // ── Users ─────────────────────────────────────────────────────────────────────

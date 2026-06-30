@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Pencil, Ban } from 'lucide-react';
+import { Plus, Pencil, Ban, Trash2 } from 'lucide-react';
 import { unitsApi } from '../../services/api';
 import type { Unit, UnitStatus } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
@@ -52,6 +52,7 @@ export default function Units() {
   const qc = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
+  const [confirmDeleteUnit, setConfirmDeleteUnit] = useState<Unit | null>(null);
 
   const { data: units = [], isLoading } = useQuery({
     queryKey: ['units'],
@@ -82,6 +83,14 @@ export default function Units() {
   const deactivateMutation = useMutation({
     mutationFn: unitsApi.delete,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['units'] }),
+  });
+
+  const permanentDeleteMutation = useMutation({
+    mutationFn: unitsApi.permanentDelete,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['units'] });
+      setConfirmDeleteUnit(null);
+    },
   });
 
   function openEdit(unit: Unit) {
@@ -167,6 +176,15 @@ export default function Units() {
                               <Ban size={14} />
                             </Button>
                           )}
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            title="Excluir permanentemente"
+                            className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                            onClick={() => setConfirmDeleteUnit(unit)}
+                          >
+                            <Trash2 size={14} />
+                          </Button>
                         </div>
                       </TableCell>
                     )}
@@ -225,6 +243,42 @@ export default function Units() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Permanent delete confirmation dialog */}
+      <Dialog open={!!confirmDeleteUnit} onOpenChange={open => { if (!open) setConfirmDeleteUnit(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 size={18} />
+              Excluir unidade permanentemente
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-2 space-y-3">
+            <p className="text-sm text-gray-700">
+              Tem certeza que deseja excluir permanentemente a unidade{' '}
+              <span className="font-semibold">"{confirmDeleteUnit?.name}"</span>?
+            </p>
+            <p className="text-xs text-gray-500">
+              Esta ação não pode ser desfeita. Se a unidade possuir dados financeiros ou usuários vinculados, a exclusão será bloqueada.
+            </p>
+            {permanentDeleteMutation.error && (
+              <p className="text-xs text-red-500">{(permanentDeleteMutation.error as Error).message}</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDeleteUnit(null)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={permanentDeleteMutation.isPending}
+              onClick={() => confirmDeleteUnit && permanentDeleteMutation.mutate(confirmDeleteUnit.id)}
+            >
+              {permanentDeleteMutation.isPending ? 'Excluindo...' : 'Excluir'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
