@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ShoppingCart, Plus, AlertCircle, Check } from 'lucide-react';
+import { ShoppingCart, Plus, AlertCircle, Check, Pencil, XCircle } from 'lucide-react';
 import { purchasesApi, budgetsApi, lookupApi, unitsApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUnit } from '../../contexts/UnitContext';
@@ -353,8 +353,33 @@ export default function Compras() {
         }
       />
 
-      {/* KPI Cards */}
-      <motion.div variants={staggerContainer()} initial="hidden" animate="visible" className="grid grid-cols-3 gap-3">
+      {/* Mobile KPIs */}
+      <div className="flex flex-col gap-2 sm:hidden">
+        <div className="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600">Intencionadas</p>
+            <p className="text-[10px] text-blue-500 mt-0.5">{kpi.intendedCount} compra{kpi.intendedCount !== 1 ? 's' : ''}</p>
+          </div>
+          <p className="text-lg font-black tabular-nums text-blue-700">{formatCurrency(kpi.intendedTotal)}</p>
+        </div>
+        <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600">Confirmadas</p>
+            <p className="text-[10px] text-emerald-500 mt-0.5">{kpi.confirmedCount} compra{kpi.confirmedCount !== 1 ? 's' : ''}</p>
+          </div>
+          <p className="text-lg font-black tabular-nums text-emerald-700">{formatCurrency(kpi.confirmedTotal)}</p>
+        </div>
+        <div className="flex items-center justify-between bg-brand-navy/5 border border-brand-navy/10 rounded-xl px-4 py-3">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-brand-navy">Total Geral</p>
+            <p className="text-[10px] text-brand-navy/60 mt-0.5">{purchases.filter(p => p.status !== 'Cancelled').length} ativas</p>
+          </div>
+          <p className="text-lg font-black tabular-nums text-brand-navy">{formatCurrency(kpi.grandTotal)}</p>
+        </div>
+      </div>
+
+      {/* Desktop KPI Cards */}
+      <motion.div variants={staggerContainer()} initial="hidden" animate="visible" className="hidden sm:grid grid-cols-3 gap-3">
         <StatCard
           label="Intencionadas"
           value={formatCurrency(kpi.intendedTotal)}
@@ -419,75 +444,124 @@ export default function Compras() {
             }
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-50">
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-400">Descrição</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-400">Categoria</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 hidden md:table-cell">Unidade</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 hidden lg:table-cell">Verba</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 hidden sm:table-cell">Vencimento</th>
-                  <th className="text-right px-4 py-3 text-xs font-medium text-gray-400">Valor</th>
-                  <th className="text-center px-4 py-3 text-xs font-medium text-gray-400">Status</th>
-                  {canMutate && <th className="text-right px-4 py-3 text-xs font-medium text-gray-400">Ações</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {purchases.map(item => (
-                  <tr key={item.id} className="border-b border-gray-50 hover:bg-gray-50/70 transition-colors">
-                    <td className="px-4 py-3.5 font-medium text-gray-800">
-                      {item.description}
-                      {item.notes && <p className="text-xs text-gray-400 font-normal mt-0.5 truncate max-w-48">{item.notes}</p>}
-                    </td>
-                    <td className="px-4 py-3.5 text-gray-600">{item.categoryName}</td>
-                    <td className="px-4 py-3.5 text-gray-600 hidden md:table-cell">{item.unitName}</td>
-                    <td className="px-4 py-3.5 text-gray-500 text-xs hidden lg:table-cell">{item.budgetDescription}</td>
-                    <td className="px-4 py-3.5 text-gray-600 hidden sm:table-cell">
-                      {item.dueDate ? item.dueDate.split('-').reverse().join('/') : <span className="text-gray-300">—</span>}
-                    </td>
-                    <td className="px-4 py-3.5 text-right font-bold text-gray-800 tabular-nums">{formatCurrency(item.amount)}</td>
-                    <td className="px-4 py-3.5 text-center"><StatusBadge status={item.status} /></td>
-                    {canMutate && (
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {item.status === 'Intended' && (
-                            <Button
-                              size="sm" variant="outline"
-                              onClick={() => setConfirmingItem(item)}
-                              disabled={confirmMutation.isPending}
-                              className="h-7 px-2.5 text-xs text-emerald-700 border-emerald-200 hover:bg-emerald-50 gap-1"
-                            >
-                              <Check size={12} /> Confirmar
-                            </Button>
-                          )}
-                          {item.status !== 'Cancelled' && (
-                            <Button
-                              size="sm" variant="outline"
-                              onClick={() => setEditItem(item)}
-                              className="h-7 px-2.5 text-xs text-gray-600 hover:bg-gray-100"
-                            >
-                              Editar
-                            </Button>
-                          )}
-                          {item.status !== 'Cancelled' && (
-                            <Button
-                              size="sm" variant="outline"
-                              onClick={() => setCancellingItem(item)}
-                              disabled={cancelMutation.isPending}
-                              className="h-7 px-2.5 text-xs text-red-600 border-red-200 hover:bg-red-50"
-                            >
-                              Cancelar
-                            </Button>
-                          )}
+          <>
+            {/* Mobile card list */}
+            <div className="sm:hidden divide-y divide-gray-50">
+              {purchases.map(item => {
+                const barColors: Record<string, string> = {
+                  Intended: 'bg-blue-400', Confirmed: 'bg-emerald-400', Cancelled: 'bg-gray-300',
+                };
+                return (
+                  <div key={item.id} className="flex">
+                    <span className={`w-0.75 shrink-0 self-stretch ${barColors[item.status] ?? 'bg-gray-300'}`} />
+                    <div className="flex-1 min-w-0 px-3 py-3">
+                      <div className="flex items-start gap-3 mb-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-800 text-sm leading-snug">{item.description}</p>
+                          {item.notes && <p className="text-xs text-gray-400 mt-0.5 truncate">{item.notes}</p>}
                         </div>
-                      </td>
-                    )}
+                        <span className="shrink-0 font-bold text-sm tabular-nums text-gray-800">{formatCurrency(item.amount)}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <StatusBadge status={item.status} />
+                        <span className="text-xs text-gray-400 flex-1 min-w-0 truncate">{item.categoryName}</span>
+                        {canMutate && (
+                          <div className="flex gap-0.5 -mr-1">
+                            {item.status === 'Intended' && (
+                              <Button variant="ghost" size="icon-sm" onClick={() => setConfirmingItem(item)} className="text-emerald-500 hover:text-emerald-700 h-7 w-7" title="Confirmar">
+                                <Check size={12} />
+                              </Button>
+                            )}
+                            {item.status !== 'Cancelled' && (
+                              <Button variant="ghost" size="icon-sm" onClick={() => setEditItem(item)} className="text-gray-300 hover:text-brand-navy h-7 w-7" title="Editar">
+                                <Pencil size={12} />
+                              </Button>
+                            )}
+                            {item.status !== 'Cancelled' && (
+                              <Button variant="ghost" size="icon-sm" onClick={() => setCancellingItem(item)} className="text-gray-300 hover:text-red-600 h-7 w-7" title="Cancelar">
+                                <XCircle size={12} />
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-50">
+                    <th className="text-left px-4 py-3 text-xs font-medium text-gray-400">Descrição</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-gray-400">Categoria</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 hidden md:table-cell">Unidade</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 hidden lg:table-cell">Verba</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-gray-400">Vencimento</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-gray-400">Valor</th>
+                    <th className="text-center px-4 py-3 text-xs font-medium text-gray-400">Status</th>
+                    {canMutate && <th className="text-right px-4 py-3 text-xs font-medium text-gray-400">Ações</th>}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {purchases.map(item => (
+                    <tr key={item.id} className="border-b border-gray-50 hover:bg-gray-50/70 transition-colors">
+                      <td className="px-4 py-3.5 font-medium text-gray-800">
+                        {item.description}
+                        {item.notes && <p className="text-xs text-gray-400 font-normal mt-0.5 truncate max-w-48">{item.notes}</p>}
+                      </td>
+                      <td className="px-4 py-3.5 text-gray-600">{item.categoryName}</td>
+                      <td className="px-4 py-3.5 text-gray-600 hidden md:table-cell">{item.unitName}</td>
+                      <td className="px-4 py-3.5 text-gray-500 text-xs hidden lg:table-cell">{item.budgetDescription}</td>
+                      <td className="px-4 py-3.5 text-gray-600">
+                        {item.dueDate ? item.dueDate.split('-').reverse().join('/') : <span className="text-gray-300">—</span>}
+                      </td>
+                      <td className="px-4 py-3.5 text-right font-bold text-gray-800 tabular-nums">{formatCurrency(item.amount)}</td>
+                      <td className="px-4 py-3.5 text-center"><StatusBadge status={item.status} /></td>
+                      {canMutate && (
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {item.status === 'Intended' && (
+                              <Button
+                                size="sm" variant="outline"
+                                onClick={() => setConfirmingItem(item)}
+                                disabled={confirmMutation.isPending}
+                                className="h-7 px-2.5 text-xs text-emerald-700 border-emerald-200 hover:bg-emerald-50 gap-1"
+                              >
+                                <Check size={12} /> Confirmar
+                              </Button>
+                            )}
+                            {item.status !== 'Cancelled' && (
+                              <Button
+                                size="sm" variant="outline"
+                                onClick={() => setEditItem(item)}
+                                className="h-7 px-2.5 text-xs text-gray-600 hover:bg-gray-100"
+                              >
+                                Editar
+                              </Button>
+                            )}
+                            {item.status !== 'Cancelled' && (
+                              <Button
+                                size="sm" variant="outline"
+                                onClick={() => setCancellingItem(item)}
+                                disabled={cancelMutation.isPending}
+                                className="h-7 px-2.5 text-xs text-red-600 border-red-200 hover:bg-red-50"
+                              >
+                                Cancelar
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
