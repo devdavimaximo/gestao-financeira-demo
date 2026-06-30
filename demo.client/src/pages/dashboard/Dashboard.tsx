@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
@@ -27,18 +27,18 @@ import type { LucideIcon } from 'lucide-react';
 function DashboardSkeleton() {
   return (
     <div className="space-y-4 animate-pulse">
-      <div className="grid grid-cols-[1fr_160px] gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-[1fr_160px] gap-4">
         <div className="h-44 bg-gray-200 rounded-2xl" />
         <div className="h-44 bg-gray-200 rounded-2xl" />
       </div>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[0, 1, 2, 3].map(i => <div key={i} className="h-28 bg-gray-200 rounded-2xl" />)}
       </div>
-      <div className="grid grid-cols-5 gap-4">
-        <div className="col-span-3 h-72 bg-gray-200 rounded-2xl" />
-        <div className="col-span-2 h-72 bg-gray-200 rounded-2xl" />
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <div className="col-span-full lg:col-span-3 h-72 bg-gray-200 rounded-2xl" />
+        <div className="col-span-full lg:col-span-2 h-72 bg-gray-200 rounded-2xl" />
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="h-44 bg-gray-200 rounded-2xl" />
         <div className="h-44 bg-gray-200 rounded-2xl" />
       </div>
@@ -109,24 +109,31 @@ function ChartTooltip({ active, payload, label }: {
 
 // ── Resumo item ───────────────────────────────────────────────────────────────
 
-function ResumoItem({ icon: Icon, label, value, iconBg, iconColor, last = false }: {
+function ResumoItem({ icon: Icon, label, value, iconBg, iconColor, href, last = false }: {
   icon: LucideIcon;
   label: string;
   value: string;
   iconBg: string;
   iconColor: string;
+  href?: string;
   last?: boolean;
 }) {
-  return (
-    <div className={cn('flex items-center gap-3 py-3', !last && 'border-b border-gray-50')}>
+  const inner = (
+    <div className={cn(
+      'flex items-center gap-3 py-3 rounded-lg transition-colors',
+      !last && 'border-b border-gray-50',
+      href && 'hover:bg-gray-50 cursor-pointer',
+    )}>
       <div className={cn('size-9 rounded-full flex items-center justify-center shrink-0', iconBg)}>
         <Icon size={16} className={iconColor} />
       </div>
       <span className="flex-1 text-sm text-gray-600 truncate">{label}</span>
       <span className="font-bold text-sm text-gray-800 tabular-nums shrink-0">{value}</span>
-      <ChevronRight size={14} className="text-gray-300 shrink-0" />
+      <ChevronRight size={14} className={cn('shrink-0', href ? 'text-gray-400' : 'text-gray-300')} />
     </div>
   );
+  if (href) return <Link to={href} className="block">{inner}</Link>;
+  return inner;
 }
 
 // ── Quick action button ───────────────────────────────────────────────────────
@@ -164,6 +171,7 @@ export default function Dashboard() {
   const today = new Date();
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [year, setYear] = useState(today.getFullYear());
+  const [chartPeriod, setChartPeriod] = useState('6');
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['dashboard', selectedUnitId, month, year],
@@ -184,6 +192,7 @@ export default function Dashboard() {
   const prevYear = month === 1 ? year - 1 : year;
   const prevPeriodLabel = `${MONTH_NAMES[prevMonth - 1]}/${prevYear}`;
 
+  const navigate = useNavigate();
   const fmtBRL = useCallback((v: number) => formatCurrency(v), []);
   const fmtInt = useCallback((v: number) => String(Math.round(v)), []);
 
@@ -211,6 +220,7 @@ export default function Dashboard() {
     acc.push({ v: (i === 0 ? 0 : acc[i - 1].v) + p.revenue });
     return acc;
   }, []);
+  const chartData = monthlyChart.slice(-Number(chartPeriod));
 
   return (
     <div className="space-y-4">
@@ -286,7 +296,7 @@ export default function Dashboard() {
         >
 
           {/* ── Row 1: Hero + Alertas ── */}
-          <div className="grid grid-cols-[1fr_160px] gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_160px] gap-4">
 
             {/* Hero — Saldo do Período */}
             <motion.div
@@ -313,7 +323,7 @@ export default function Dashboard() {
                 <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/30 mb-2">
                   Saldo do Período
                 </p>
-                <div className="text-[40px] font-black text-white leading-none tabular-nums tracking-tight">
+                <div className="text-[30px] sm:text-[40px] font-black text-white leading-none tabular-nums tracking-tight">
                   <AnimatedNumber value={data.kpis.balance} format={fmtBRL} duration={950} />
                 </div>
                 <p className="text-[11px] mt-2 font-medium flex items-center gap-1.5">
@@ -344,10 +354,11 @@ export default function Dashboard() {
             {/* Alertas */}
             <motion.div
               variants={cardVariants}
-              className="rounded-2xl border border-white/[0.07] flex flex-col items-center justify-center text-center cursor-default gap-2 px-4 py-5"
+              className="rounded-2xl border border-white/[0.07] flex flex-col items-center justify-center text-center cursor-pointer gap-2 px-4 py-5"
               style={{ background: 'linear-gradient(160deg, #0a1c3e 0%, #0d2045 100%)' }}
               whileHover={{ y: -3, boxShadow: '0 10px 32px rgba(0,0,0,0.35)' }}
               transition={{ duration: 0.15 }}
+              onClick={() => navigate('/alertas')}
             >
               {/* Bell circle */}
               <div className="size-[52px] rounded-full border border-white/20 bg-white/[0.04] flex items-center justify-center">
@@ -373,10 +384,10 @@ export default function Dashboard() {
           </div>
 
           {/* ── Row 2: KPIs ── */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
             {/* Receitas */}
-            <motion.div variants={cardVariants} whileHover={{ y: -3, boxShadow: '0 10px 28px rgba(0,0,0,0.08)' }} transition={{ duration: 0.15 }} className="cursor-default">
+            <motion.div variants={cardVariants} whileHover={{ y: -3, boxShadow: '0 10px 28px rgba(0,0,0,0.08)' }} transition={{ duration: 0.15 }} className="cursor-pointer" onClick={() => navigate('/lancamentos')}>
               <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-5 relative overflow-hidden">
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600">Receitas</p>
@@ -402,7 +413,7 @@ export default function Dashboard() {
             </motion.div>
 
             {/* Despesas */}
-            <motion.div variants={cardVariants} whileHover={{ y: -3, boxShadow: '0 10px 28px rgba(0,0,0,0.08)' }} transition={{ duration: 0.15 }} className="cursor-default">
+            <motion.div variants={cardVariants} whileHover={{ y: -3, boxShadow: '0 10px 28px rgba(0,0,0,0.08)' }} transition={{ duration: 0.15 }} className="cursor-pointer" onClick={() => navigate('/lancamentos')}>
               <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-5 relative overflow-hidden">
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-red-500">Despesas</p>
@@ -428,7 +439,7 @@ export default function Dashboard() {
             </motion.div>
 
             {/* A Pagar */}
-            <motion.div variants={cardVariants} whileHover={{ y: -3, boxShadow: '0 10px 28px rgba(0,0,0,0.08)' }} transition={{ duration: 0.15 }} className="cursor-default">
+            <motion.div variants={cardVariants} whileHover={{ y: -3, boxShadow: '0 10px 28px rgba(0,0,0,0.08)' }} transition={{ duration: 0.15 }} className="cursor-pointer" onClick={() => navigate('/contas-pagar')}>
               <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-5 relative overflow-hidden">
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600">A Pagar</p>
@@ -445,7 +456,7 @@ export default function Dashboard() {
             </motion.div>
 
             {/* A Receber */}
-            <motion.div variants={cardVariants} whileHover={{ y: -3, boxShadow: '0 10px 28px rgba(0,0,0,0.08)' }} transition={{ duration: 0.15 }} className="cursor-default">
+            <motion.div variants={cardVariants} whileHover={{ y: -3, boxShadow: '0 10px 28px rgba(0,0,0,0.08)' }} transition={{ duration: 0.15 }} className="cursor-pointer" onClick={() => navigate('/contas-receber')}>
               <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-5 relative overflow-hidden">
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-brand-blue">A Receber</p>
@@ -463,10 +474,10 @@ export default function Dashboard() {
           </div>
 
           {/* ── Row 3: Chart (3/5) + Resumo do Período (2/5) ── */}
-          <div className="grid grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
 
             {/* Bar chart */}
-            <div className="col-span-3">
+            <div className="col-span-full lg:col-span-3">
               <MotionCard noHover>
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                   <div className="flex items-start justify-between mb-4">
@@ -474,16 +485,20 @@ export default function Dashboard() {
                       <h2 className="text-sm font-bold text-brand-navy">Histórico — Últimos 6 Meses</h2>
                       <p className="text-xs text-gray-400 mt-0.5">Receitas vs Despesas</p>
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-gray-500 border border-gray-200 rounded-lg px-2.5 py-1.5 select-none hover:bg-gray-50 transition-colors cursor-default">
-                      Mensal
-                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="ml-0.5" aria-hidden>
-                        <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </div>
+                    <Select value={chartPeriod} onValueChange={setChartPeriod}>
+                      <SelectTrigger className="w-28 h-8 text-xs border-gray-200 bg-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="3">3 Meses</SelectItem>
+                        <SelectItem value="6">6 Meses</SelectItem>
+                        <SelectItem value="12">12 Meses</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
-                  <div className="h-56" aria-label="Gráfico de receitas e despesas dos últimos 6 meses">
-                    {data.monthlyChart.length === 0 ? (
+                  <div className="h-56" aria-label="Gráfico de receitas e despesas">
+                    {chartData.length === 0 ? (
                       <EmptyState
                         icon={<TrendingUp size={22} strokeWidth={1.5} />}
                         title="Sem dados no histórico"
@@ -491,7 +506,7 @@ export default function Dashboard() {
                       />
                     ) : (
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={data.monthlyChart} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barGap={4}>
+                        <BarChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barGap={4}>
                           <CartesianGrid strokeDasharray="3 0" stroke="#f3f4f6" vertical={false} />
                           <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
                           <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={v => `R$${(v / 1000).toFixed(0)}k`} width={48} />
@@ -518,7 +533,7 @@ export default function Dashboard() {
             </div>
 
             {/* Resumo do período */}
-            <div className="col-span-2">
+            <div className="col-span-full lg:col-span-2">
               <MotionCard noHover>
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 h-full">
                   <div className="flex items-center justify-between mb-1">
@@ -533,6 +548,7 @@ export default function Dashboard() {
                     value={formatCurrency(data.kpis.balance)}
                     iconBg="bg-emerald-500"
                     iconColor="text-white"
+                    href="/fluxo-caixa"
                   />
                   <ResumoItem
                     icon={Activity}
@@ -540,6 +556,7 @@ export default function Dashboard() {
                     value={formatCurrency(avgDailyRevenue)}
                     iconBg="bg-blue-500"
                     iconColor="text-white"
+                    href="/lancamentos"
                   />
                   <ResumoItem
                     icon={Percent}
@@ -547,6 +564,7 @@ export default function Dashboard() {
                     value={`${expenseRatio.toFixed(1)}%`}
                     iconBg="bg-amber-500"
                     iconColor="text-white"
+                    href="/fluxo-caixa"
                   />
                   <ResumoItem
                     icon={Receipt}
@@ -554,6 +572,7 @@ export default function Dashboard() {
                     value={formatCurrency(avgTicket)}
                     iconBg="bg-violet-500"
                     iconColor="text-white"
+                    href="/lancamentos"
                     last
                   />
                 </div>
@@ -562,13 +581,13 @@ export default function Dashboard() {
           </div>
 
           {/* ── Row 4: Atalhos Rápidos + Atividade Recente ── */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
             {/* Atalhos rápidos */}
             <MotionCard noHover>
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                 <h2 className="text-sm font-bold text-brand-navy mb-5">Atalhos rápidos</h2>
-                <div className="flex items-start gap-5 flex-wrap">
+                <div className="flex items-start gap-5 flex-wrap justify-center sm:justify-start">
                   <QuickAction icon={PlusCircle}   label="Novo lançamento"  href="/lancamentos"    iconBg="bg-emerald-500" iconColor="text-white" />
                   <QuickAction icon={FileText}      label="Emitir recibo"   href="#"               iconBg="bg-blue-500"    iconColor="text-white" />
                   <QuickAction icon={AlertTriangle} label="Contas a pagar"  href="/contas-pagar"   iconBg="bg-orange-500"  iconColor="text-white" />
@@ -591,10 +610,11 @@ export default function Dashboard() {
                 ) : (
                   <div>
                     {recentEntries.map((entry, i) => (
-                      <div
+                      <Link
                         key={entry.id}
+                        to="/lancamentos"
                         className={cn(
-                          'flex items-center gap-3 py-2.5',
+                          'flex items-center gap-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors',
                           i < recentEntries.length - 1 && 'border-b border-gray-50',
                         )}
                       >
@@ -613,7 +633,7 @@ export default function Dashboard() {
                           {entry.type === 'Revenue' ? '+' : '−'}{formatCurrency(entry.amount)}
                         </span>
                         <ChevronRight size={13} className="text-gray-200 shrink-0" />
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 )}
