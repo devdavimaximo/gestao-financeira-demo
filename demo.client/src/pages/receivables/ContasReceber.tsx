@@ -167,8 +167,33 @@ export default function ContasReceber() {
         </Select>
       </div>
 
-      {/* KPI Cards */}
-      <motion.div variants={staggerContainer()} initial="hidden" animate="visible" className="grid grid-cols-3 gap-3 mb-5">
+      {/* Mobile KPIs */}
+      <div className="flex flex-col gap-2 mb-4 sm:hidden">
+        <div className="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600">Previsto</p>
+            <p className="text-[10px] text-blue-500 mt-0.5">{receivables.filter(r => r.status === 'Pending').length} entrada{receivables.filter(r => r.status === 'Pending').length !== 1 ? 's' : ''}</p>
+          </div>
+          <p className="text-lg font-black tabular-nums text-blue-700">{formatCurrency(totalPending)}</p>
+        </div>
+        <div className="flex items-center justify-between bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-red-600">Atrasado</p>
+            <p className="text-[10px] text-red-500 mt-0.5">{receivables.filter(r => r.status === 'Overdue').length} entrada{receivables.filter(r => r.status === 'Overdue').length !== 1 ? 's' : ''}</p>
+          </div>
+          <p className="text-lg font-black tabular-nums text-red-700">{formatCurrency(totalOverdue)}</p>
+        </div>
+        <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600">Recebido</p>
+            <p className="text-[10px] text-emerald-500 mt-0.5">{receivables.filter(r => r.status === 'Received').length} entrada{receivables.filter(r => r.status === 'Received').length !== 1 ? 's' : ''}</p>
+          </div>
+          <p className="text-lg font-black tabular-nums text-emerald-700">{formatCurrency(totalReceived)}</p>
+        </div>
+      </div>
+
+      {/* Desktop KPI Cards */}
+      <motion.div variants={staggerContainer()} initial="hidden" animate="visible" className="hidden sm:grid grid-cols-3 gap-3 mb-5">
         <StatCard
           label="Previsto"
           value={formatCurrency(totalPending)}
@@ -210,71 +235,122 @@ export default function ContasReceber() {
             }
           />
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-gray-50 hover:bg-transparent">
-                  <TableHead className="text-xs font-medium text-gray-400">Descrição</TableHead>
-                  <TableHead className="text-xs font-medium text-gray-400 hidden md:table-cell">Categoria</TableHead>
-                  <TableHead className="text-xs font-medium text-gray-400 hidden lg:table-cell">Unidade</TableHead>
-                  <TableHead className="text-xs font-medium text-gray-400">Data Prevista</TableHead>
-                  <TableHead className="text-xs font-medium text-gray-400 text-right">Valor Previsto</TableHead>
-                  <TableHead className="text-xs font-medium text-gray-400">Status</TableHead>
-                  {canEdit && <TableHead className="text-xs font-medium text-gray-400 text-right">Ações</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {receivables.map(item => {
-                  const isLate = item.status === 'Pending' && item.expectedDate < today;
-                  return (
-                    <TableRow key={item.id} className="hover:bg-gray-50/70 border-gray-50">
-                      <TableCell className="py-3.5">
-                        <div className="font-medium text-gray-800 text-sm">{item.description}</div>
-                        {item.receivedAmount && item.receivedDate && (
-                          <div className="text-xs text-emerald-600 mt-0.5">
-                            Recebido {formatCurrency(item.receivedAmount)} em {formatDateOnly(item.receivedDate)}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell text-sm text-gray-600 py-3.5">{item.categoryName}</TableCell>
-                      <TableCell className="hidden lg:table-cell text-sm text-gray-600 py-3.5">{item.unitName}</TableCell>
-                      <TableCell className={`text-sm font-medium whitespace-nowrap py-3.5 ${isLate || item.status === 'Overdue' ? 'text-red-600' : 'text-gray-700'}`}>
-                        {formatDateOnly(item.expectedDate)}
-                      </TableCell>
-                      <TableCell className="text-right font-bold text-sm text-gray-800 whitespace-nowrap tabular-nums py-3.5">
-                        {formatCurrency(item.expectedAmount)}
-                      </TableCell>
-                      <TableCell className="py-3.5"><StatusBadge status={item.status} /></TableCell>
-                      {canEdit && (
-                        <TableCell className="text-right py-3.5">
-                          <div className="flex items-center justify-end gap-1">
+          <>
+            {/* Mobile card list */}
+            <div className="sm:hidden divide-y divide-gray-50">
+              {receivables.map(item => {
+                const isLate = item.status === 'Pending' && item.expectedDate < today;
+                const barColors: Record<AccountReceivableStatus, string> = {
+                  Pending: 'bg-blue-400', Overdue: 'bg-red-500',
+                  Received: 'bg-emerald-400', Cancelled: 'bg-gray-300',
+                };
+                return (
+                  <div key={item.id} className="flex">
+                    <span className={`w-0.75 shrink-0 self-stretch ${barColors[item.status]}`} />
+                    <div className="flex-1 min-w-0 px-3 py-3">
+                      <div className="flex items-start gap-3 mb-2">
+                        <p className="flex-1 min-w-0 font-semibold text-gray-800 text-sm leading-snug">{item.description}</p>
+                        <span className="shrink-0 font-bold text-sm tabular-nums text-gray-800">{formatCurrency(item.expectedAmount)}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <StatusBadge status={item.status} />
+                        <span className={`text-xs shrink-0 ${isLate || item.status === 'Overdue' ? 'text-red-600 font-medium' : 'text-gray-400'}`}>
+                          {formatDateOnly(item.expectedDate)}
+                        </span>
+                        <span className="flex-1" />
+                        {canEdit && (
+                          <div className="flex gap-0.5 -mr-1">
                             {(item.status === 'Pending' || item.status === 'Overdue') && (
-                              <Button
-                                variant="ghost" size="icon-sm" title="Registrar Recebimento"
-                                className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                                onClick={() => openReceive(item)}
-                              >
-                                <Wallet size={13} />
+                              <Button variant="ghost" size="icon-sm" onClick={() => openReceive(item)} className="text-emerald-500 hover:text-emerald-700 h-7 w-7">
+                                <Wallet size={12} />
                               </Button>
                             )}
                             {item.status !== 'Cancelled' && item.status !== 'Received' && (
-                              <Button
-                                variant="ghost" size="icon-sm" title="Cancelar"
-                                className="text-gray-400 hover:text-red-600 hover:bg-red-50"
-                                onClick={() => setCancellingId(item.id)}
-                              >
-                                <XCircle size={13} />
+                              <Button variant="ghost" size="icon-sm" onClick={() => setCancellingId(item.id)} className="text-gray-300 hover:text-red-600 h-7 w-7">
+                                <XCircle size={12} />
                               </Button>
                             )}
                           </div>
-                        </TableCell>
+                        )}
+                      </div>
+                      {item.receivedAmount != null && item.receivedDate && (
+                        <p className="text-xs text-emerald-600 mt-1.5">
+                          Recebido {formatCurrency(item.receivedAmount)} em {formatDateOnly(item.receivedDate)}
+                        </p>
                       )}
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-gray-50 hover:bg-transparent">
+                    <TableHead className="text-xs font-medium text-gray-400">Descrição</TableHead>
+                    <TableHead className="text-xs font-medium text-gray-400 hidden md:table-cell">Categoria</TableHead>
+                    <TableHead className="text-xs font-medium text-gray-400 hidden lg:table-cell">Unidade</TableHead>
+                    <TableHead className="text-xs font-medium text-gray-400">Data Prevista</TableHead>
+                    <TableHead className="text-xs font-medium text-gray-400 text-right">Valor Previsto</TableHead>
+                    <TableHead className="text-xs font-medium text-gray-400">Status</TableHead>
+                    {canEdit && <TableHead className="text-xs font-medium text-gray-400 text-right">Ações</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {receivables.map(item => {
+                    const isLate = item.status === 'Pending' && item.expectedDate < today;
+                    return (
+                      <TableRow key={item.id} className="hover:bg-gray-50/70 border-gray-50">
+                        <TableCell className="py-3.5">
+                          <div className="font-medium text-gray-800 text-sm">{item.description}</div>
+                          {item.receivedAmount && item.receivedDate && (
+                            <div className="text-xs text-emerald-600 mt-0.5">
+                              Recebido {formatCurrency(item.receivedAmount)} em {formatDateOnly(item.receivedDate)}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-sm text-gray-600 py-3.5">{item.categoryName}</TableCell>
+                        <TableCell className="hidden lg:table-cell text-sm text-gray-600 py-3.5">{item.unitName}</TableCell>
+                        <TableCell className={`text-sm font-medium whitespace-nowrap py-3.5 ${isLate || item.status === 'Overdue' ? 'text-red-600' : 'text-gray-700'}`}>
+                          {formatDateOnly(item.expectedDate)}
+                        </TableCell>
+                        <TableCell className="text-right font-bold text-sm text-gray-800 whitespace-nowrap tabular-nums py-3.5">
+                          {formatCurrency(item.expectedAmount)}
+                        </TableCell>
+                        <TableCell className="py-3.5"><StatusBadge status={item.status} /></TableCell>
+                        {canEdit && (
+                          <TableCell className="text-right py-3.5">
+                            <div className="flex items-center justify-end gap-1">
+                              {(item.status === 'Pending' || item.status === 'Overdue') && (
+                                <Button
+                                  variant="ghost" size="icon-sm" title="Registrar Recebimento"
+                                  className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                  onClick={() => openReceive(item)}
+                                >
+                                  <Wallet size={13} />
+                                </Button>
+                              )}
+                              {item.status !== 'Cancelled' && item.status !== 'Received' && (
+                                <Button
+                                  variant="ghost" size="icon-sm" title="Cancelar"
+                                  className="text-gray-400 hover:text-red-600 hover:bg-red-50"
+                                  onClick={() => setCancellingId(item.id)}
+                                >
+                                  <XCircle size={13} />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </div>
 
