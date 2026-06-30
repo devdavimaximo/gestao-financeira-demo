@@ -100,7 +100,7 @@ export default function CanaisVenda() {
 
       {isLoading && (
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="flex flex-col sm:grid sm:grid-cols-3 gap-3">
             {[0, 1, 2].map(i => (
               <div key={i} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
                 <div className="skeleton h-3 w-24 rounded mb-3" />
@@ -132,8 +132,24 @@ export default function CanaisVenda() {
 
       {data.length > 0 && (
         <>
-          {/* KPI Summary */}
-          <motion.div variants={staggerContainer()} initial="hidden" animate="visible" className="grid grid-cols-3 gap-3">
+          {/* Mobile KPIs */}
+          <div className="flex flex-col gap-2 sm:hidden">
+            <div className="flex items-center justify-between bg-brand-navy/5 border border-brand-navy/10 rounded-xl px-4 py-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-brand-navy">Total Receitas</p>
+              <p className="text-lg font-black tabular-nums text-brand-navy">{formatCurrency(totalRevenue)}</p>
+            </div>
+            <div className="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600">Canais Ativos</p>
+              <p className="text-lg font-black tabular-nums text-blue-700">{data.length}</p>
+            </div>
+            <div className="flex items-center justify-between bg-gray-50 border border-gray-100 rounded-xl px-4 py-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Lançamentos</p>
+              <p className="text-lg font-black tabular-nums text-gray-700">{totalCount}</p>
+            </div>
+          </div>
+
+          {/* Desktop KPI Summary */}
+          <motion.div variants={staggerContainer()} initial="hidden" animate="visible" className="hidden sm:grid grid-cols-3 gap-3">
             <StatCard
               label="Total Receitas"
               value={formatCurrency(totalRevenue)}
