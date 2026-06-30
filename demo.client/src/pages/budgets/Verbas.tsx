@@ -162,8 +162,32 @@ export default function Verbas() {
         </Select>
       </div>
 
-      {/* KPI Cards */}
-      <motion.div variants={staggerContainer()} initial="hidden" animate="visible" className="grid grid-cols-3 gap-3 mb-5">
+      {/* Mobile KPIs */}
+      <div className="flex flex-col gap-2 mb-4 sm:hidden">
+        <div className="flex items-center justify-between bg-brand-navy/5 border border-brand-navy/10 rounded-xl px-4 py-3">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-brand-navy">Total Orçado</p>
+            <p className="text-[10px] text-brand-navy/60 mt-0.5">{budgets.length} verba{budgets.length !== 1 ? 's' : ''}</p>
+          </div>
+          <p className="text-lg font-black tabular-nums text-brand-navy">{formatCurrency(totalBudgeted)}</p>
+        </div>
+        <div className="flex items-center justify-between bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600">Utilizado</p>
+            <p className="text-[10px] text-amber-500 mt-0.5">{totalBudgeted > 0 ? `${((totalUsed / totalBudgeted) * 100).toFixed(0)}% do total` : '—'}</p>
+          </div>
+          <p className="text-lg font-black tabular-nums text-amber-700">{formatCurrency(totalUsed)}</p>
+        </div>
+        <div className={`flex items-center justify-between border rounded-xl px-4 py-3 ${totalAvailable < 0 ? 'bg-red-50 border-red-100' : 'bg-emerald-50 border-emerald-100'}`}>
+          <div>
+            <p className={`text-[10px] font-bold uppercase tracking-widest ${totalAvailable < 0 ? 'text-red-600' : 'text-emerald-600'}`}>Disponível</p>
+          </div>
+          <p className={`text-lg font-black tabular-nums ${totalAvailable < 0 ? 'text-red-700' : 'text-emerald-700'}`}>{formatCurrency(totalAvailable)}</p>
+        </div>
+      </div>
+
+      {/* Desktop KPI Cards */}
+      <motion.div variants={staggerContainer()} initial="hidden" animate="visible" className="hidden sm:grid grid-cols-3 gap-3 mb-5">
         <StatCard
           label="Total Orçado"
           value={formatCurrency(totalBudgeted)}
