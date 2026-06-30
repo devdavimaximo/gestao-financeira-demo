@@ -57,12 +57,26 @@ const ALERT_META: Record<AlertType, {
   },
 };
 
-function AlertCard({ alert, onMarkRead }: { alert: Alert; onMarkRead: (id: string) => void }) {
+function formatDueDate(dueDate: string): { label: string; overdue: boolean } {
+  const parts = dueDate.split('-');
+  const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const overdue = d < today;
+  const formatted = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return { label: formatted, overdue };
+}
+
+function AlertCard({
+  alert, onMarkRead, onMarkUnread,
+}: {
+  alert: Alert;
+  onMarkRead: (id: string) => void;
+  onMarkUnread: (id: string) => void;
+}) {
   const meta = ALERT_META[alert.type];
   const Icon = meta.icon;
-  const date = new Date(alert.createdAt).toLocaleDateString('pt-BR', {
-    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
-  });
+  const due = alert.dueDate ? formatDueDate(alert.dueDate) : null;
 
   return (
     <div className={[
@@ -83,10 +97,20 @@ function AlertCard({ alert, onMarkRead }: { alert: Alert; onMarkRead: (id: strin
               <span className="w-2 h-2 rounded-full bg-brand-navy shrink-0" aria-label="Não lido" />
             )}
           </div>
-          {!alert.isRead && (
+          {alert.isRead ? (
+            <button
+              onClick={() => onMarkUnread(alert.id)}
+              aria-label="Marcar como não lido"
+              title="Marcar como não lido"
+              className="shrink-0 w-7 h-7 rounded-md hover:bg-white/60 flex items-center justify-center text-gray-300 hover:text-gray-500 transition-colors"
+            >
+              <CheckCheck size={14} />
+            </button>
+          ) : (
             <button
               onClick={() => onMarkRead(alert.id)}
               aria-label="Marcar como lido"
+              title="Marcar como lido"
               className="shrink-0 w-7 h-7 rounded-md hover:bg-white/60 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
             >
               <Check size={14} />
@@ -96,8 +120,14 @@ function AlertCard({ alert, onMarkRead }: { alert: Alert; onMarkRead: (id: strin
         <p className="text-sm text-gray-800 leading-snug">{alert.message}</p>
         <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
           <span>{alert.unitName}</span>
-          <span>·</span>
-          <span>{date}</span>
+          {due && (
+            <>
+              <span>·</span>
+              <span className={due.overdue ? 'text-red-500 font-medium' : ''}>
+                {due.overdue ? 'Venceu em:' : 'Vence em:'} {due.label}
+              </span>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -115,6 +145,14 @@ export default function Alertas() {
 
   const markReadMutation = useMutation({
     mutationFn: (id: string) => alertsApi.markRead(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['alerts'] });
+      qc.invalidateQueries({ queryKey: ['alerts-count'] });
+    },
+  });
+
+  const markUnreadMutation = useMutation({
+    mutationFn: (id: string) => alertsApi.markUnread(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['alerts'] });
       qc.invalidateQueries({ queryKey: ['alerts-count'] });
@@ -223,6 +261,7 @@ export default function Alertas() {
               key={alert.id}
               alert={alert}
               onMarkRead={id => markReadMutation.mutate(id)}
+              onMarkUnread={id => markUnreadMutation.mutate(id)}
             />
           ))}
         </div>
