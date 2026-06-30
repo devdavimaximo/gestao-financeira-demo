@@ -10,6 +10,7 @@ public class Alert
     public bool IsRead { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public string? ReferenceId { get; set; }
+    public DateOnly? DueDate { get; set; }
 
     public Guid UnitId { get; set; }
     public Unit Unit { get; set; } = null!;

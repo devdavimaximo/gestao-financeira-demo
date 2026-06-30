@@ -60,6 +60,7 @@ export interface SalesChannel {
 
 // ── Financial Entries ─────────────────────────────────────────────────────────
 export type FinancialEntryType = 'Revenue' | 'Expense';
+export type RecurrenceType = 'Weekly' | 'Monthly' | 'Yearly';
 
 export interface FinancialEntry {
   id: string;
@@ -76,6 +77,10 @@ export interface FinancialEntry {
   paymentMethodName: string;
   salesChannelId?: string;
   salesChannelName?: string;
+  parentEntryId?: string;
+  recurrenceFrequency?: RecurrenceType;
+  recurrenceInterval?: number;
+  recurrenceEndDate?: string;
 }
 
 export interface CreateEntryRequest {
@@ -88,6 +93,10 @@ export interface CreateEntryRequest {
   categoryId: string;
   paymentMethodId: string;
   salesChannelId?: string;
+  isRecurring?: boolean;
+  recurrenceFrequency?: RecurrenceType;
+  recurrenceInterval?: number;
+  recurrenceEndDate?: string;
 }
 
 export interface UpdateEntryRequest {
@@ -99,6 +108,7 @@ export interface UpdateEntryRequest {
   categoryId: string;
   paymentMethodId: string;
   salesChannelId?: string;
+  scope?: 'single' | 'all';
 }
 
 // ── Accounts Payable ──────────────────────────────────────────────────────────
@@ -264,6 +274,7 @@ export interface Alert {
   createdAt: string;
   unitId: string;
   unitName: string;
+  dueDate?: string;
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────

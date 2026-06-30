@@ -23,4 +23,12 @@ public class FinancialEntry
 
     public Guid? SalesChannelId { get; set; }
     public SalesChannel? SalesChannel { get; set; }
+
+    // Recurrence — set on series-parent entries only
+    public RecurrenceType? RecurrenceFrequency { get; set; }
+    public int? RecurrenceInterval { get; set; }
+    public DateOnly? RecurrenceEndDate { get; set; }
+
+    // Null = standalone or series parent; non-null = child of a recurring series
+    public Guid? ParentEntryId { get; set; }
 }

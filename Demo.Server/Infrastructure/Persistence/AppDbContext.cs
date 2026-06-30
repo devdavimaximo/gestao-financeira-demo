@@ -107,6 +107,13 @@ public class AppDbContext : IdentityUserContext<AppUser, Guid>
         builder.Entity<UserSession>()
             .HasIndex(s => new { s.UserId, s.IsRevoked });
 
+        // FinancialEntry — self-referencing FK for recurring series
+        builder.Entity<FinancialEntry>()
+            .HasOne<FinancialEntry>()
+            .WithMany()
+            .HasForeignKey(e => e.ParentEntryId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         // Financial precision
         builder.Entity<FinancialEntry>().Property(e => e.Amount).HasPrecision(18, 2);
         builder.Entity<AccountPayable>().Property(a => a.Amount).HasPrecision(18, 2);

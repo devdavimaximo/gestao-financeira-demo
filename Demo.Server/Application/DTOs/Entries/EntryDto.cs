@@ -16,7 +16,11 @@ public record FinancialEntryDto(
     Guid PaymentMethodId,
     string PaymentMethodName,
     Guid? SalesChannelId,
-    string? SalesChannelName
+    string? SalesChannelName,
+    Guid? ParentEntryId,
+    RecurrenceType? RecurrenceFrequency,
+    int? RecurrenceInterval,
+    DateOnly? RecurrenceEndDate
 );
 
 public record CreateEntryRequest(
@@ -28,7 +32,11 @@ public record CreateEntryRequest(
     Guid UnitId,
     Guid CategoryId,
     Guid PaymentMethodId,
-    Guid? SalesChannelId
+    Guid? SalesChannelId,
+    bool IsRecurring = false,
+    RecurrenceType? RecurrenceFrequency = null,
+    int? RecurrenceInterval = null,
+    DateOnly? RecurrenceEndDate = null
 );
 
 public record UpdateEntryRequest(
@@ -39,5 +47,6 @@ public record UpdateEntryRequest(
     string? Notes,
     Guid CategoryId,
     Guid PaymentMethodId,
-    Guid? SalesChannelId
+    Guid? SalesChannelId,
+    string Scope = "single"
 );

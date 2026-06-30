@@ -99,8 +99,8 @@ export const entriesApi = {
     request<FinancialEntry>('/entries', { method: 'POST', body: JSON.stringify(dto) }),
   update: (id: string, dto: UpdateEntryRequest) =>
     request<FinancialEntry>(`/entries/${id}`, { method: 'PUT', body: JSON.stringify(dto) }),
-  delete: (id: string) =>
-    request<void>(`/entries/${id}`, { method: 'DELETE' }),
+  delete: (id: string, scope: 'single' | 'all' = 'single') =>
+    request<void>(`/entries/${id}?scope=${scope}`, { method: 'DELETE' }),
 };
 
 // ── Accounts Payable ──────────────────────────────────────────────────────────
@@ -183,6 +183,8 @@ export const alertsApi = {
     request<{ count: number }>(`/alerts/unread-count${buildParams({ unitId })}`),
   markRead: (id: string) =>
     request<void>(`/alerts/${id}/read`, { method: 'POST' }),
+  markUnread: (id: string) =>
+    request<void>(`/alerts/${id}/unread`, { method: 'POST' }),
   markAllRead: (unitId?: string | null) =>
     request<void>(`/alerts/read-all${buildParams({ unitId })}`, { method: 'POST' }),
 };

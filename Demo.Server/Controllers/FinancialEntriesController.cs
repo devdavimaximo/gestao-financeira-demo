@@ -40,7 +40,8 @@ public class FinancialEntriesController(AppDbContext db) : ControllerBase
                 e.UnitId, e.Unit.Name,
                 e.CategoryId, e.Category.Name,
                 e.PaymentMethodId, e.PaymentMethod.Name,
-                e.SalesChannelId, e.SalesChannel != null ? e.SalesChannel.Name : null))
+                e.SalesChannelId, e.SalesChannel != null ? e.SalesChannel.Name : null,
+                e.ParentEntryId, e.RecurrenceFrequency, e.RecurrenceInterval, e.RecurrenceEndDate))
             .ToListAsync();
 
         return Ok(entries);
@@ -50,20 +51,43 @@ public class FinancialEntriesController(AppDbContext db) : ControllerBase
     [RequirePermission(PermissionCodes.Financial.Create)]
     public async Task<IActionResult> Create([FromBody] CreateEntryRequest req)
     {
-        var entry = new FinancialEntry
+        if (req.IsRecurring)
         {
-            Id              = Guid.NewGuid(),
-            Description     = req.Description,
-            Amount          = req.Amount,
-            Type            = req.Type,
-            Date            = req.Date,
-            Notes           = req.Notes,
-            UnitId          = req.UnitId,
-            CategoryId      = req.CategoryId,
-            PaymentMethodId = req.PaymentMethodId,
-            SalesChannelId  = req.SalesChannelId
-        };
+            if (req.RecurrenceFrequency is null || req.RecurrenceEndDate is null)
+                return BadRequest(new { message = "Informe o tipo e a data final da recorrência." });
 
+            if (req.RecurrenceEndDate <= req.Date)
+                return BadRequest(new { message = "A data final deve ser posterior à data do lançamento." });
+
+            var dates = GenerateDates(req.Date, req.RecurrenceFrequency.Value, req.RecurrenceInterval ?? 1, req.RecurrenceEndDate.Value);
+
+            if (dates.Count > 120)
+                return BadRequest(new { message = "A série não pode ter mais de 120 lançamentos. Reduza o período ou o intervalo." });
+
+            var parent = BuildEntry(req);
+            parent.Date                 = dates[0];
+            parent.RecurrenceFrequency  = req.RecurrenceFrequency;
+            parent.RecurrenceInterval   = req.RecurrenceInterval ?? 1;
+            parent.RecurrenceEndDate    = req.RecurrenceEndDate;
+
+            db.FinancialEntries.Add(parent);
+            await db.SaveChangesAsync();
+
+            var children = dates.Skip(1).Select(d =>
+            {
+                var child = BuildEntry(req);
+                child.Date          = d;
+                child.ParentEntryId = parent.Id;
+                return child;
+            }).ToList();
+
+            db.FinancialEntries.AddRange(children);
+            await db.SaveChangesAsync();
+
+            return Ok(await ProjectDto(parent.Id));
+        }
+
+        var entry = BuildEntry(req);
         db.FinancialEntries.Add(entry);
         await db.SaveChangesAsync();
         return Ok(await ProjectDto(entry.Id));
@@ -76,14 +100,36 @@ public class FinancialEntriesController(AppDbContext db) : ControllerBase
         var entry = await db.FinancialEntries.FindAsync(id);
         if (entry is null) return NotFound();
 
-        entry.Description     = req.Description;
-        entry.Amount          = req.Amount;
-        entry.Type            = req.Type;
-        entry.Date            = req.Date;
-        entry.Notes           = req.Notes;
-        entry.CategoryId      = req.CategoryId;
-        entry.PaymentMethodId = req.PaymentMethodId;
-        entry.SalesChannelId  = req.SalesChannelId;
+        if (req.Scope == "all")
+        {
+            var parentId = entry.ParentEntryId ?? entry.Id;
+            var series = await db.FinancialEntries
+                .Where(e => e.Id == parentId || e.ParentEntryId == parentId)
+                .ToListAsync();
+
+            foreach (var e in series)
+            {
+                e.Description     = req.Description;
+                e.Amount          = req.Amount;
+                e.Type            = req.Type;
+                e.Notes           = req.Notes;
+                e.CategoryId      = req.CategoryId;
+                e.PaymentMethodId = req.PaymentMethodId;
+                e.SalesChannelId  = req.SalesChannelId;
+                // Date is intentionally kept per-entry
+            }
+        }
+        else
+        {
+            entry.Description     = req.Description;
+            entry.Amount          = req.Amount;
+            entry.Type            = req.Type;
+            entry.Date            = req.Date;
+            entry.Notes           = req.Notes;
+            entry.CategoryId      = req.CategoryId;
+            entry.PaymentMethodId = req.PaymentMethodId;
+            entry.SalesChannelId  = req.SalesChannelId;
+        }
 
         await db.SaveChangesAsync();
         return Ok(await ProjectDto(id));
@@ -91,13 +137,60 @@ public class FinancialEntriesController(AppDbContext db) : ControllerBase
 
     [HttpDelete("{id:guid}")]
     [RequirePermission(PermissionCodes.Financial.Delete)]
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<IActionResult> Delete(Guid id, [FromQuery] string scope = "single")
     {
         var entry = await db.FinancialEntries.FindAsync(id);
         if (entry is null) return NotFound();
-        db.FinancialEntries.Remove(entry);
+
+        if (scope == "all")
+        {
+            var parentId = entry.ParentEntryId ?? entry.Id;
+            var series = await db.FinancialEntries
+                .Where(e => e.Id == parentId || e.ParentEntryId == parentId)
+                .ToListAsync();
+            db.FinancialEntries.RemoveRange(series);
+        }
+        else
+        {
+            db.FinancialEntries.Remove(entry);
+        }
+
         await db.SaveChangesAsync();
         return NoContent();
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private static FinancialEntry BuildEntry(CreateEntryRequest req) => new()
+    {
+        Id              = Guid.NewGuid(),
+        Description     = req.Description,
+        Amount          = req.Amount,
+        Type            = req.Type,
+        Date            = req.Date,
+        Notes           = req.Notes,
+        UnitId          = req.UnitId,
+        CategoryId      = req.CategoryId,
+        PaymentMethodId = req.PaymentMethodId,
+        SalesChannelId  = req.SalesChannelId,
+    };
+
+    private static List<DateOnly> GenerateDates(DateOnly start, RecurrenceType frequency, int interval, DateOnly end)
+    {
+        var dates = new List<DateOnly>();
+        var current = start;
+        while (current <= end)
+        {
+            dates.Add(current);
+            current = frequency switch
+            {
+                RecurrenceType.Weekly  => current.AddDays(7 * interval),
+                RecurrenceType.Monthly => current.AddMonths(interval),
+                RecurrenceType.Yearly  => current.AddYears(interval),
+                _ => throw new ArgumentOutOfRangeException(nameof(frequency))
+            };
+        }
+        return dates;
     }
 
     private Task<FinancialEntryDto> ProjectDto(Guid id) =>
@@ -108,6 +201,7 @@ public class FinancialEntriesController(AppDbContext db) : ControllerBase
                 e.UnitId, e.Unit.Name,
                 e.CategoryId, e.Category.Name,
                 e.PaymentMethodId, e.PaymentMethod.Name,
-                e.SalesChannelId, e.SalesChannel != null ? e.SalesChannel.Name : null))
+                e.SalesChannelId, e.SalesChannel != null ? e.SalesChannel.Name : null,
+                e.ParentEntryId, e.RecurrenceFrequency, e.RecurrenceInterval, e.RecurrenceEndDate))
             .FirstAsync();
 }

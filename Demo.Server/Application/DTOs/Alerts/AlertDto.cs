@@ -10,5 +10,6 @@ public record AlertDto(
     string? ReferenceId,
     DateTime CreatedAt,
     Guid UnitId,
-    string UnitName
+    string UnitName,
+    DateOnly? DueDate
 );

@@ -59,6 +59,9 @@ public static class DataSeeder
         // Always run localization/ordering fix (idempotent)
         await FixPermissionNamesPtAsync(db);
 
+        // Always re-seed alerts if any have missing DueDate (migration added the column)
+        await FixAlertDueDatesAsync(db);
+
         if (await db.Units.AnyAsync()) return;
 
         var permCodeToId = SeedModulesAndPermissions(db);
@@ -74,6 +77,20 @@ public static class DataSeeder
         SeedAccountsPayable(db);
         SeedAccountsReceivable(db);
         SeedBudgetsAndPurchases(db);
+        SeedAlerts(db);
+        await db.SaveChangesAsync();
+    }
+
+    // Re-seeds alerts when DueDate column was added but existing rows still have null.
+    private static async Task FixAlertDueDatesAsync(AppDbContext db)
+    {
+        var hasMissingDueDate = await db.Alerts.AnyAsync(a =>
+            (a.Type == AlertType.UpcomingDue || a.Type == AlertType.OverduePayable) && a.DueDate == null);
+
+        if (!hasMissingDueDate) return;
+
+        db.Alerts.RemoveRange(db.Alerts);
+        await db.SaveChangesAsync();
         SeedAlerts(db);
         await db.SaveChangesAsync();
     }
@@ -604,13 +621,14 @@ public static class DataSeeder
     private static void SeedAlerts(AppDbContext db)
     {
         var now = DateTime.UtcNow;
+        var today = DateOnly.FromDateTime(now);
         db.Alerts.AddRange(
-            new Alert { Id = Guid.NewGuid(), Type = AlertType.UpcomingDue,    Message = "Aluguel Loja Centro vence em 5 dias",             UnitId = UnitCentroId, CreatedAt = now },
-            new Alert { Id = Guid.NewGuid(), Type = AlertType.UpcomingDue,    Message = "Fornecedor Bebidas vence em 3 dias (Loja Centro)", UnitId = UnitCentroId, CreatedAt = now },
-            new Alert { Id = Guid.NewGuid(), Type = AlertType.OverduePayable, Message = "Energia Elétrica vencida há 5 dias — Loja Centro", UnitId = UnitCentroId, CreatedAt = now },
-            new Alert { Id = Guid.NewGuid(), Type = AlertType.UpcomingDue,    Message = "Aluguel Loja Sul vence em 5 dias",                UnitId = UnitSulId,    CreatedAt = now },
-            new Alert { Id = Guid.NewGuid(), Type = AlertType.OverduePayable, Message = "Energia Elétrica vencida há 5 dias — Loja Sul",   UnitId = UnitSulId,    CreatedAt = now },
-            new Alert { Id = Guid.NewGuid(), Type = AlertType.LowBudget,      Message = "Verba da Loja Sul está com 58% utilizado",         UnitId = UnitSulId,    CreatedAt = now }
+            new Alert { Id = Guid.NewGuid(), Type = AlertType.UpcomingDue,    Message = "Aluguel Loja Centro",             UnitId = UnitCentroId, CreatedAt = now, DueDate = today.AddDays(5)  },
+            new Alert { Id = Guid.NewGuid(), Type = AlertType.UpcomingDue,    Message = "Fornecedor Bebidas (Loja Centro)", UnitId = UnitCentroId, CreatedAt = now, DueDate = today.AddDays(3)  },
+            new Alert { Id = Guid.NewGuid(), Type = AlertType.OverduePayable, Message = "Energia Elétrica — Loja Centro",  UnitId = UnitCentroId, CreatedAt = now, DueDate = today.AddDays(-5) },
+            new Alert { Id = Guid.NewGuid(), Type = AlertType.UpcomingDue,    Message = "Aluguel Loja Sul",                UnitId = UnitSulId,    CreatedAt = now, DueDate = today.AddDays(5)  },
+            new Alert { Id = Guid.NewGuid(), Type = AlertType.OverduePayable, Message = "Energia Elétrica — Loja Sul",     UnitId = UnitSulId,    CreatedAt = now, DueDate = today.AddDays(-5) },
+            new Alert { Id = Guid.NewGuid(), Type = AlertType.LowBudget,      Message = "Verba da Loja Sul está com 58% utilizado", UnitId = UnitSulId, CreatedAt = now }
         );
     }
 
